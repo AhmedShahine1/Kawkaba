@@ -1,0 +1,99 @@
+﻿@using InitialProject.Core.DTO.EntityDTO
+@using InitialProject.Core.Helpers
+@model List<RequestResponseLog>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">Request and Response Logs</h1>
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Request URL</th>
+                    <th>HTTP Method</th>
+                    <th>Request Body</th>
+                    <th>Response Body</th>
+                </tr>
+            </thead>
+            <tbody id="logTableBody">
+                @foreach (var log in Model)
+                {
+                    <tr>
+                        <td>@log.Timestamp</td>
+                        <td>@log.RequestUrl</td>
+                        <td>@log.HttpMethod</td>
+                        <td><pre>@log.RequestBody</pre></td>
+                        <td>
+                            <div class="response-body" id="responseBody_@log.Timestamp">
+                                @Html.Raw(JsonFormatter.FormatJson(log.ResponseBody))
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-secondary" onclick="copyToClipboard('responseBody_@log.Timestamp')">Copy</button>
+                                <button class="btn btn-secondary" onclick="downloadResponse('responseBody_@log.Timestamp', 'response_@(log.Timestamp).json')">Download</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.6/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        function fetchLogs() {
+            $.ajax({
+                url: '/RequestResponseViewer/GetLogs', // Ensure this matches your controller action
+                method: 'GET',
+                success: function (data) {
+                    $('#logTableBody').empty();
+                    data.forEach(function (log) {
+                        $('#logTableBody').append(
+                            '<tr>' +
+                            '<td>' + log.timestamp + '</td>' +
+                            '<td>' + log.requestUrl + '</td>' +
+                            '<td>' + log.httpMethod + '</td>' +
+                            '<td><pre>' + log.requestBody + '</pre></td>' +
+                            '<td>' +
+                            '<div class="response-body" id="responseBody_' + log.timestamp + '">' +
+                            JSON.stringify(JSON.parse(log.responseBody), null, 2) +
+                            '</div>' +
+                            '<div class="action-buttons">' +
+                            '<button class="btn btn-secondary" onclick="copyToClipboard(\'responseBody_' + log.timestamp + '\')">Copy</button>' +
+                            '<button class="btn btn-secondary" onclick="downloadResponse(\'responseBody_' + log.timestamp + '\', \'response_' + log.timestamp + '.json\')">Download</button>' +
+                            '</div>' +
+                            '</td>' +
+                            '</tr>'
+                        );
+                    });
+                }
+            });
+        }
+
+        function copyToClipboard(elementId) {
+            var copyText = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(copyText).then(function () {
+                alert("Copied to clipboard!");
+            }, function (err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+
+        function downloadResponse(elementId, filename) {
+            var dataStr = document.getElementById(elementId).innerText;
+            var dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            var link = document.createElement('a');
+            link.setAttribute('href', dataUri);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        }
+
+        // Fetch logs every 10 seconds
+        setInterval(fetchLogs, 10000);
+
+        // Initial fetch
+        fetchLogs();
+    </script>
+</body>
