@@ -3,22 +3,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kokaba", "InitialProject\Kokaba.csproj", "{7AEE70E6-CF20-4AA0-8D7B-96346603A9FC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kowkaba", "InitialProject\Kowkaba.csproj", "{7AEE70E6-CF20-4AA0-8D7B-96346603A9FC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6} = {2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6}
 		{7E85FA7C-F5FB-4B4F-9632-037C40157734} = {7E85FA7C-F5FB-4B4F-9632-037C40157734}
 		{8282FBB3-19EF-4F5A-AEB2-8F7FC8D9048A} = {8282FBB3-19EF-4F5A-AEB2-8F7FC8D9048A}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kokaba.Core", "InitialProject.Core\Kokaba.Core.csproj", "{2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kowkaba.Core", "InitialProject.Core\Kowkaba.Core.csproj", "{2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kokaba.BusinessLayer", "InitialProject.BusinessLayer\Kokaba.BusinessLayer.csproj", "{7E85FA7C-F5FB-4B4F-9632-037C40157734}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kowkaba.BusinessLayer", "InitialProject.BusinessLayer\Kowkaba.BusinessLayer.csproj", "{7E85FA7C-F5FB-4B4F-9632-037C40157734}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6} = {2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6}
 		{8282FBB3-19EF-4F5A-AEB2-8F7FC8D9048A} = {8282FBB3-19EF-4F5A-AEB2-8F7FC8D9048A}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kokaba.RepositoryLayer", "InitialProject.RepositoryLayer\Kokaba.RepositoryLayer.csproj", "{8282FBB3-19EF-4F5A-AEB2-8F7FC8D9048A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kowkaba.RepositoryLayer", "InitialProject.RepositoryLayer\Kowkaba.RepositoryLayer.csproj", "{8282FBB3-19EF-4F5A-AEB2-8F7FC8D9048A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6} = {2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6}
 	EndProjectSection

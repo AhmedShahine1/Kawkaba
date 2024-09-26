@@ -24,7 +24,7 @@ namespace InitialProject.Core
             if (!optionsBuilder.IsConfigured)
             {
                 optionsBuilder.UseSqlServer(
-                    "Server=LAPTOP-K8QC50ME;Database=Our gp;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;");
+                    "Server=184.168.120.88,1433;Database=Kawkaba;User Id=kowkaba;Password=Chanks@100;Trusted_Connection=True;MultipleActiveResultSets=true;Trust Server Certificate=True;");
             }
         }
 

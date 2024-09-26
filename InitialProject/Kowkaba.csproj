@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\InitialProject.BusinessLayer\Kokaba.BusinessLayer.csproj" />
-    <ProjectReference Include="..\InitialProject.Core\Kokaba.Core.csproj" />
-    <ProjectReference Include="..\InitialProject.RepositoryLayer\Kokaba.RepositoryLayer.csproj" />
+    <ProjectReference Include="..\InitialProject.BusinessLayer\Kowkaba.BusinessLayer.csproj" />
+    <ProjectReference Include="..\InitialProject.Core\Kowkaba.Core.csproj" />
+    <ProjectReference Include="..\InitialProject.RepositoryLayer\Kowkaba.RepositoryLayer.csproj" />
   </ItemGroup>
 
 </Project>
