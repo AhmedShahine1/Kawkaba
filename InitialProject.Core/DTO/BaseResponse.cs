@@ -1,4 +1,4 @@
-﻿namespace InitialProject.Core.DTO;
+﻿namespace Kawkaba.Core.DTO;
 
 public class BaseResponse
 {

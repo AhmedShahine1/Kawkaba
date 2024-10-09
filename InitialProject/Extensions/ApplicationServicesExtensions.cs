@@ -1,7 +1,8 @@
-﻿using InitialProject.BusinessLayer.Interfaces;
-using InitialProject.BusinessLayer.Services;
+﻿using Kawkaba.BusinessLayer.AutoMapper;
+using Kawkaba.BusinessLayer.Interfaces;
+using Kawkaba.BusinessLayer.Services;
 
-namespace InitialProject.Extensions;
+namespace Kawkaba.Extensions;
 
 public static class ApplicationServicesExtensions
 {
@@ -18,8 +19,11 @@ public static class ApplicationServicesExtensions
             options.Cookie.HttpOnly = true;
             options.Cookie.IsEssential = true;
         });
-
+        services.AddTransient<IAccountService, AccountService>();
+        services.AddTransient<IEmailService, EmailService>();
+        services.AddTransient<IFileHandling, FileHandling>();
         services.AddHttpClient();
+        services.AddAutoMapper(typeof(MappingProfile));
         return services;
     }
 

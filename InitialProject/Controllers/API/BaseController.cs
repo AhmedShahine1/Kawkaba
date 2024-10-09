@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
-namespace InitialProject.Controllers.API
+namespace Kawkaba.Controllers.API
 {
     [Route("api/[controller]")]
     [ApiController]

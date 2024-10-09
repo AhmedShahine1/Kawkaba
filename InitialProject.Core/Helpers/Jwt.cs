@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace InitialProject.Core.Helpers
+namespace Kawkaba.Core.Helpers
 {
     public class Jwt
     {

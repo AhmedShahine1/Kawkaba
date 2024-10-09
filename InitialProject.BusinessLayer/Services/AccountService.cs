@@ -1,665 +1,521 @@
-﻿using InitialProject.BusinessLayer.Interfaces;
+﻿using AutoMapper;
+using Kawkaba.BusinessLayer.Interfaces;
+using Kawkaba.Core.Helpers;
+using Kawkaba.Core.Entity.ApplicationData;
+using Kawkaba.Core.Entity.Files;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.EntityFrameworkCore;
+using Kawkaba.Core.DTO.AuthViewModel.RoleModel;
+using Kawkaba.Core.DTO.AuthViewModel.RegisterModel;
+using Kawkaba.Core.DTO.AuthViewModel;
+using Kawkaba.RepositoryLayer.Interfaces;
 
-namespace InitialProject.BusinessLayer.Services;
+namespace Kawkaba.BusinessLayer.Services;
 
 public class AccountService : IAccountService
 {
-    //private readonly UserManager<ApplicationUser> _userManager;
-    //private readonly RoleManager<ApplicationRole> _roleManager;
-    //private readonly IUnitOfWork _unitOfWork;
-    //private readonly IFileHandling _fileHandling;
-    //private readonly Jwt _jwt;
-    //private readonly IHttpClientFactory _clientFactory;
+    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<ApplicationRole> _roleManager;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IFileHandling _fileHandling;
+    private readonly Jwt _jwt;
+    private readonly IHttpClientFactory _clientFactory;
+    private readonly IMemoryCache memoryCache;
+    private readonly IMapper mapper;
+    private readonly IAuthorizationService _authorizationService;
 
-    //public AccountService(IHttpClientFactory clientFactory,UserManager<ApplicationUser> userManager, IFileHandling photoHandling,
-    //    RoleManager<ApplicationRole> roleManager, IUnitOfWork unitOfWork,
-    //    IOptions<Jwt> jwt)
+    public AccountService(IHttpClientFactory clientFactory, UserManager<ApplicationUser> userManager, IFileHandling photoHandling,
+        RoleManager<ApplicationRole> roleManager, IUnitOfWork unitOfWork,
+        IOptions<Jwt> jwt, IMemoryCache _memoryCache, IMapper _mapper, SignInManager<ApplicationUser> signInManager, IAuthorizationService authorizationService)
+    {
+        _clientFactory = clientFactory;
+        _userManager = userManager;
+        _roleManager = roleManager;
+        _unitOfWork = unitOfWork;
+        _jwt = jwt.Value;
+        _fileHandling = photoHandling;
+        memoryCache = _memoryCache;
+        mapper = _mapper;
+        _signInManager = signInManager;
+        _authorizationService = authorizationService;
+    }
+    //------------------------------------------------------------------------------------------------------------
+    public async Task<ApplicationUser> GetUserById(string id)
+    {
+        var user = await _userManager.Users
+            .Include(u => u.Profile)
+            .FirstOrDefaultAsync(x => x.Id == id && x.Status);
+        return user;
+    }
+    //------------------------------------------------------------------------------------------------------------
+    // Check if email or phone number already exists before creating or updating the user
+    private async Task<bool> IsEmailExistAsync(string Email, string userId = null)
+    {
+        return await _userManager.Users.AnyAsync(u =>
+            (u.Email == Email) && u.Id != userId);
+    }
+
+    // Helper methods for handling profile images
+    private async Task SetProfileImage(ApplicationUser user, IFormFile imageProfile)
+    {
+        var path = await GetPathByName("ProfileImages");
+
+        if (imageProfile != null)
+        {
+            user.ProfileId = await _fileHandling.UploadFile(imageProfile, path);
+        }
+        else
+        {
+            user.ProfileId = await _fileHandling.DefaultProfile(path);
+        }
+    }
+
+    private async Task UpdateProfileImage(ApplicationUser user, IFormFile imageProfile)
+    {
+        if (imageProfile != null)
+        {
+            var path = await GetPathByName("ProfileImages");
+            try
+            {
+                user.ProfileId = await _fileHandling.UpdateFile(imageProfile, path, user.ProfileId);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to update profile image", ex);
+            }
+        }
+    }
+
+    public async Task<ApplicationUser> GetUserFromToken(string token)
+    {
+        try
+        {
+            var userId = ValidateJwtToken(token);
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new ArgumentException("User not found");
+            }
+            return user;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(ex.Message);
+        }
+    }
+    //------------------------------------------------------------------------------------------------------------
+    // Register methods
+    public async Task<IdentityResult> RegisterSupportDeveloper(RegisterSupportDeveloper model)
+    {
+        var user = mapper.Map<ApplicationUser>(model);
+
+        if (model.ImageProfile != null)
+        {
+            var path = await GetPathByName("ProfileImages");
+            user.ProfileId = await _fileHandling.UploadFile(model.ImageProfile, path);
+        }
+        else
+        {
+            var path = await GetPathByName("ProfileImages");
+            user.ProfileId = await _fileHandling.DefaultProfile(path);
+        }
+        user.PhoneNumberConfirmed = true;
+        var result = await _userManager.CreateAsync(user, model.Password);
+
+        if (result.Succeeded)
+        {
+            await _userManager.AddToRoleAsync(user, "Support Developer");
+        }
+        else
+        {
+            // Handle potential errors by throwing an exception or logging details
+            throw new InvalidOperationException("Failed to create user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+
+        return result;
+    }
+
+    public async Task<IdentityResult> RegisterEmployee(RegisterEmployee model)
+    {
+        if (await IsEmailExistAsync(model.Email))
+        {
+            throw new ArgumentException("Email already exists.");
+        }
+
+        var user = mapper.Map<ApplicationUser>(model);
+
+        if (model.ImageProfile != null)
+        {
+            var path = await GetPathByName("ProfileImages");
+            user.ProfileId = await _fileHandling.UploadFile(model.ImageProfile, path);
+        }
+        else
+        {
+            var path = await GetPathByName("ProfileImages");
+            user.ProfileId = await _fileHandling.DefaultProfile(path);
+        }
+        // Create the user
+        var result = await _userManager.CreateAsync(user, model.Password);
+
+        if (result.Succeeded)
+        {
+            await _userManager.AddToRoleAsync(user, "Employee");
+        }
+        else
+        {
+            // Handle potential errors by throwing an exception or logging details
+            throw new InvalidOperationException("Failed to create user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+
+        return result;
+    }
+
+    public async Task<IdentityResult> RegisterCompany(RegisterCompany model)
+    {
+        if (await IsEmailExistAsync(model.Email))
+        {
+            throw new ArgumentException("Email already exists.");
+        }
+
+        var user = mapper.Map<ApplicationUser>(model);
+        if (model.ImageProfile != null)
+        {
+            var path = await GetPathByName("ProfileImages");
+            user.ProfileId = await _fileHandling.UploadFile(model.ImageProfile, path);
+        }
+        else
+        {
+            var path = await GetPathByName("ProfileImages");
+            user.ProfileId = await _fileHandling.DefaultProfile(path);
+        }
+        var result = await _userManager.CreateAsync(user, model.Password);
+
+        if (result.Succeeded)
+        {
+            await _userManager.AddToRoleAsync(user, "Company");
+        }
+        else
+        {
+            throw new InvalidOperationException($"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+
+        return result;
+    }
+
+    public async Task<IdentityResult> RegisterAdmin(RegisterAdmin model)
+    {
+        if (await IsEmailExistAsync(model.Email))
+        {
+            throw new ArgumentException("phone number already exists.");
+        }
+
+        var user = mapper.Map<ApplicationUser>(model);
+        if (model.ImageProfile != null)
+        {
+            var path = await GetPathByName("ProfileImages");
+            user.ProfileId = await _fileHandling.UploadFile(model.ImageProfile, path);
+        }
+        else
+        {
+            var path = await GetPathByName("ProfileImages");
+            user.ProfileId = await _fileHandling.DefaultProfile(path);
+        }
+        var result = await _userManager.CreateAsync(user, model.Password);
+
+        if (result.Succeeded)
+        {
+            await _userManager.AddToRoleAsync(user, "Admin");
+        }
+        else
+        {
+            throw new InvalidOperationException($"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+
+        return result;
+    }
+
+    //------------------------------------------------------------------------------------------------------------
+    //public async Task<IdentityResult> UpdateAdmin(string adminId, RegisterAdmin model)
     //{
-    //    _clientFactory = clientFactory;
-    //    _userManager = userManager;
-    //    _roleManager = roleManager;
-    //    _unitOfWork = unitOfWork;
-    //    _jwt = jwt.Value;
-    //    _fileHandling = photoHandling;
-    //}
+    //    var user = await _userManager.FindByIdAsync(adminId);
+    //    if (user == null)
+    //        throw new ArgumentException("Admin not found");
 
-    //public async Task<List<ApplicationUser>> GetAllUsers()
-    //{
-    //    return await _userManager.Users.ToListAsync();
-    //}
-
-    //public async Task<ApplicationUser> GetUserById(string userId)
-    //{
-    //    var user = await _userManager.FindByIdAsync(userId);
-    //    if (user is null)
-    //        return null;
-    //    return user;
-    //}
-
-    //public async Task<ApplicationUser> GetUserByPhoneNumber(string phoneNumber)
-    //{
-    //    var user = await _userManager.Users.FirstOrDefaultAsync(x => x.PhoneNumber == phoneNumber);
-    //    return user ;
-    //}
-
-    //public async Task<ApplicationUser> GetUserByEmail(string email)
-    //{
-    //    var user = await _userManager.Users.FirstOrDefaultAsync(x => x.Email == email);
-    //    return user ;
-    //}
-
-    //// ------------------------------------------------------------------------------------------------------------------
-    //public async Task<AuthModel> RegisterInitialProject(RegisterInitialProject model)
-    //{
-    //    if (await _userManager.FindByEmailAsync(model.Email) is not null)
-    //        return new AuthModel { Message = "this email is already Exist!", ArMessage = "هذا البريد الالكتروني مستخدم من قبل", ErrorCode = (int)Errors.ThisEmailAlreadyExist };
-
-    //    if (await Task.Run(() => _userManager.Users.Any(item => item.PhoneNumber == model.PhoneNumber)))
-    //        return new AuthModel { Message = "this phone number is already Exist!", ArMessage = "هذا الرقم المحمول مستخدم من قبل", ErrorCode = (int)Errors.ThisPhoneNumberAlreadyExist };
-
-    //    string imgUrl;
-    //    try
+    //    if (await IsPhoneExistAsync(model.PhoneNumber, adminId))
     //    {
-    //        if (model.Img!=null)
-    //            imgUrl = await _fileHandling.UploadFile(model.Img, "InitialProjectImg");
-    //        else
-    //            return new AuthModel { Message = "please select  Img for Account!", ArMessage = " من فضلك حدد صورة شخصية ", ErrorCode = (int)Errors.NoPhoto };
-    //    }
-    //    catch
-    //    {
-    //        return new AuthModel { Message = "error in uploading Img!", ArMessage = "حدث خطأ في رفع الصورة", ErrorCode = (int)Errors.ErrorInUploadingImg };
+    //        throw new ArgumentException("phone number already exists.");
     //    }
 
-    //    var user = new ApplicationUser
-    //    {
-    //        FirstName = model.FirstName,
-    //        LastName = model.LastName,
-    //        UserName = model.Email,
-    //        NormalizedUserName = model.Email.ToUpper(),
-    //        PhoneNumber = model.PhoneNumber,
-    //        Email = model.Email,
-    //        UserImgUrl = imgUrl,
-    //        Age=model.age,
-    //        Qualification = model.Qualification,
-    //        Status = true,
-    //        PhoneNumberConfirmed = true,
-    //        UserType = UserType.InitialProject,
-    //        IsAdmin = false,
-    //        Job = model.Job
-    //    };
-    //    var result = await _userManager.CreateAsync(user, model.Password);
-    //    if (!result.Succeeded)
-    //    {
-    //        var errors = result.Errors.Aggregate(string.Empty, (current, error) => current + $"{error.Description},");
-    //        return new AuthModel { Message = errors, ArMessage = errors, ErrorCode = (int)Errors.ErrorWithCreateAccount };
-    //    }
-    //    await _userManager.AddToRoleAsync(user, "InitialProject");
-
-    //    {
-    //        var InitialProject = await _userManager.FindByNameAsync(model.Email);
-
-    //        if (InitialProject is null)
-    //            return new AuthModel
-    //            {
-    //                Message = "An error occurred creating the account!",
-    //                ArMessage = "حدث خطأ أثناء إنشاء الحساب!",
-    //                ErrorCode = (int)Errors.ErrorWithCreateAccount
-    //            };
-    //        return new AuthModel
-    //        {
-    //            Email = InitialProject.Email,
-    //            PhoneNumber = InitialProject.PhoneNumber,
-    //            FirstName = InitialProject.FirstName,
-    //            LastName = InitialProject.LastName,
-    //            IsAuthenticated = true,
-    //            Qualification = InitialProject.Qualification,
-    //            Roles = new List<string> { "InitialProject" },
-    //            UserType = UserType.InitialProject,
-    //            UserImgUrl = InitialProject.UserImgUrl,
-    //            Job = InitialProject.Job,
-    //            ArMessage = "تم انشاء الحساب بنجاح",
-    //            Message = "Account successfully created",
-    //        };
-    //    }
-    //}
-
-    //public async Task<AuthModel> RegisterYouth(RegisterYouth model)
-    //{
-    //    if (await _userManager.FindByEmailAsync(model.Email) is not null)
-    //        return new AuthModel { Message = "this email is already Exist!", ArMessage = "هذا البريد الالكتروني مستخدم من قبل", ErrorCode = (int)Errors.ThisEmailAlreadyExist };
-
-    //    if (await Task.Run(() => _userManager.Users.Any(item => item.PhoneNumber == model.PhoneNumber)))
-    //        return new AuthModel { Message = "this phone number is already Exist!", ArMessage = "هذا الرقم المحمول مستخدم من قبل", ErrorCode = (int)Errors.ThisPhoneNumberAlreadyExist };
-
-    //    string imgUrl;
-    //    try
-    //    {
-    //        if (model.Img != null)
-    //            imgUrl = await _fileHandling.UploadFile(model.Img, "YouthImg");
-    //        else
-    //            return new AuthModel { Message = "please select  Img for Account!", ArMessage = " من فضلك حدد صورة شخصية ", ErrorCode = (int)Errors.NoPhoto };
-    //    }
-    //    catch
-    //    {
-    //        return new AuthModel { Message = "error in uploading Img!", ArMessage = "حدث خطأ في رفع الصورة", ErrorCode = (int)Errors.ErrorInUploadingImg };
-    //    }
-
-    //    var user = new ApplicationUser
-    //    {
-    //        FirstName = model.FirstName,
-    //        LastName = model.LastName,
-    //        UserName = model.Email,
-    //        NormalizedUserName = model.Email.ToUpper(),
-    //        PhoneNumber = model.PhoneNumber,
-    //        Email = model.Email,
-    //        Age = model.age,
-    //        UserImgUrl = imgUrl,
-    //        Qualification = model.Qualification,
-    //        Status = true,
-    //        PhoneNumberConfirmed = true,
-    //        UserType = UserType.Youth,
-    //        IsAdmin = false,
-    //        Job = model.Job
-    //    };
-    //    var result = await _userManager.CreateAsync(user, model.Password);
-    //    if (!result.Succeeded)
-    //    {
-    //        var errors = result.Errors.Aggregate(string.Empty, (current, error) => current + $"{error.Description},");
-    //        return new AuthModel { Message = errors, ArMessage = errors, ErrorCode = (int)Errors.ErrorWithCreateAccount };
-    //    }
-    //    await _userManager.AddToRoleAsync(user, "Youth");
-
-    //    {
-    //        var Youth = await _userManager.FindByNameAsync(model.Email);
-
-    //        if (Youth is null)
-    //            return new AuthModel
-    //            {
-    //                Message = "An error occurred creating the account!",
-    //                ArMessage = "حدث خطأ أثناء إنشاء الحساب!",
-    //                ErrorCode = (int)Errors.ErrorWithCreateAccount
-    //            };
-    //        return new AuthModel
-    //        {
-    //            Email = Youth.Email,
-    //            PhoneNumber = Youth.PhoneNumber,
-    //            FirstName = Youth.FirstName,
-    //            LastName = Youth.LastName,
-    //            IsAuthenticated = true,
-    //            Qualification = Youth.Qualification,
-    //            Roles = new List<string> { "Youth" },
-    //            UserType = UserType.Youth,
-    //            UserImgUrl = Youth.UserImgUrl,
-    //            Job = Youth.Job,
-    //            ArMessage = "تم انشاء الحساب بنجاح",
-    //            Message = "Account successfully created",
-    //        };
-    //    }
-    //}
-
-    //public async Task<AuthModel> RegisterAdmin(RegisterAdmin model)
-    //{
-    //    if (await _userManager.FindByEmailAsync(model.Email) is not null)
-    //        return new AuthModel { Message = "this email is already Exist!", ArMessage = "هذا البريد الالكتروني مستخدم من قبل", ErrorCode = (int)Errors.ThisEmailAlreadyExist };
-
-    //    if (await Task.Run(() => _userManager.Users.Any(item => item.PhoneNumber == model.PhoneNumber)))
-    //        return new AuthModel { Message = "this phone number is already Exist!", ArMessage = "هذا الرقم المحمول مستخدم من قبل", ErrorCode = (int)Errors.ThisPhoneNumberAlreadyExist };
-
-    //    string imgUrl;
-    //    try
-    //    {
-    //        if (model.Img != null)
-    //            imgUrl = await _fileHandling.UploadFile(model.Img, "AdminImg");
-    //        else
-    //            return new AuthModel { Message = "please select  Img for Account!", ArMessage = " من فضلك حدد صورة شخصية  ", ErrorCode = (int)Errors.NoPhoto };
-    //    }
-    //    catch
-    //    {
-    //        return new AuthModel { Message = "error in uploading Img!", ArMessage = "حدث خطأ في رفع الصورة", ErrorCode = (int)Errors.ErrorInUploadingImg };
-    //    }
-
-    //    var user = new ApplicationUser
-    //    {
-    //        FirstName = model.FirstName,
-    //        LastName = model.LastName,
-    //        UserName = model.Email,
-    //        NormalizedUserName = model.Email.ToUpper(),
-    //        PhoneNumber = model.PhoneNumber,
-    //        Email = model.Email,
-    //        UserImgUrl = imgUrl,
-    //        Age = model.age,
-    //        Qualification = model.Qualification,
-    //        Status = true,
-    //        PhoneNumberConfirmed = true,
-    //        UserType = UserType.Admin,
-    //        IsAdmin = true,
-    //        Job = model.Job
-    //    };
-    //    var result = await _userManager.CreateAsync(user, model.Password);
-    //    if (!result.Succeeded)
-    //    {
-    //        var errors = result.Errors.Aggregate(string.Empty, (current, error) => current + $"{error.Description},");
-    //        return new AuthModel { Message = errors, ArMessage = errors, ErrorCode = (int)Errors.ErrorWithCreateAccount };
-    //    }
-    //    await _userManager.AddToRoleAsync(user, "Admin");
-
-    //    {
-    //        var Admin = await _userManager.FindByNameAsync(model.Email);
-
-    //        if (Admin is null)
-    //            return new AuthModel
-    //            {
-    //                Message = "An error occurred creating the account!",
-    //                ArMessage = "حدث خطأ أثناء إنشاء الحساب!",
-    //                ErrorCode = (int)Errors.ErrorWithCreateAccount
-    //            };
-    //        return new AuthModel
-    //        {
-    //            Email = Admin.Email,
-    //            PhoneNumber = Admin.PhoneNumber,
-    //            FirstName = Admin.FirstName,
-    //            LastName = Admin.LastName,
-    //            IsAuthenticated = true,
-    //            Qualification = Admin.Qualification,
-    //            Roles = new List<string> { "Admin" },
-    //            UserType = UserType.Admin,
-    //            UserImgUrl = Admin.UserImgUrl,
-    //            Job = Admin.Job,
-    //            ArMessage = "تم انشاء الحساب بنجاح",
-    //            Message = "Account successfully created",
-    //        };
-    //    }
-    //}
-
-    ////-------------------------------------------------------------------------------------------------------------------------
-    //public async Task<AuthModel> LoginAsync(LoginModel model)
-    //{
-    //    var user = await _userManager.FindByNameAsync(model.Email);
-    //    if (user is null)
-    //        return new AuthModel { Message = "Your phone number is not Exist!", ArMessage = "الايميل غير مسجل", ErrorCode = (int)Errors.ThisPhoneNumberNotExist };
-    //    if (!await _userManager.CheckPasswordAsync(user, model.Password))
-    //        return new AuthModel { Message = "Password is not correct!", ArMessage = "كلمة المرور غير صحيحة", ErrorCode = (int)Errors.TheUsernameOrPasswordIsIncorrect };
-    //    if (!user.Status)
-    //        return new AuthModel { Message = "Your account has been suspended!", ArMessage = "حسابك تم إيقافة", ErrorCode = (int)Errors.UserIsBlocked };
-
-    //    var rolesList = _userManager.GetRolesAsync(user).Result.ToList();
-    //    return new AuthModel
-    //    {
-    //        UserId = user.Id,
-    //        Email = user.Email,
-    //        PhoneNumber = user.PhoneNumber,
-    //        FirstName = user.FirstName,
-    //        LastName = user.LastName,
-    //        IsAuthenticated = true,
-    //        Roles = rolesList,
-    //        UserType = user.UserType,
-    //        age = user.Age,
-    //        IsAdmin = user.IsAdmin,
-    //        Token = new JwtSecurityTokenHandler().WriteToken(GenerateJwtToken(user).Result),
-    //        UserImgUrl = user.UserImgUrl,
-    //        Qualification = user.Qualification,
-    //        Job = user.Job,
-    //        Message = "Login successfully",
-    //        ArMessage = "تم تسجيل الدخول بنجاح"
-    //    };
-    //}
-
-    //public async Task<bool> Logout(string userName)
-    //{
-    //    var user = await _userManager.FindByNameAsync(userName);
-    //    if (user is null)
-    //        return false;
-    //    await _userManager.UpdateAsync(user);
-    //    return true;
-    //}
-
-    ////-------------------------------------------------------------------------------------------------------------------------
-    //public async Task<AuthModel> ChangePasswordAsync(string userId, string password)
-    //{
-    //    var user = await _userManager.FindByIdAsync(userId);
-    //    if (user is null)
-    //        return new AuthModel { Message = "User not found!", ArMessage = "المستخدم غير موجود", ErrorCode = (int)Errors.TheUserNotExistOrDeleted };
-
-    //    user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, password);
-    //    await _userManager.UpdateAsync(user);
-
-    //    var jwtSecurityToken = await GenerateJwtToken(user, 1);
-    //    var rolesList = await _userManager.GetRolesAsync(user);
-
-    //    var result = new AuthModel
-    //    {
-    //        Message = "The password has been changed successfully",
-    //        ArMessage = "تم تغيير كلمة المرور بنجاح",
-    //        Email = user.Email,
-    //        PhoneNumber = user.PhoneNumber,
-    //        FirstName = user.FirstName,
-    //        LastName = user.LastName,
-    //        UserImgUrl = user.UserImgUrl,
-    //        IsAuthenticated = true,
-    //        Roles = rolesList.ToList(),
-    //        UserType = user.UserType,
-    //        IsAdmin = user.IsAdmin,
-    //        Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken)
-    //    };
-    //    return result;
-    //}
-
-    //public async Task<AuthModel> ChangeOldPasswordAsync(string userId, ChangeOldPassword changePassword)
-    //{
-    //    var user = await _userManager.FindByIdAsync(userId);
-    //    if (user is null)
-    //        return new AuthModel { Message = "User not found!", ArMessage = "المستخدم غير موجود", ErrorCode = (int)Errors.TheUserNotExistOrDeleted };
-
-    //    if (user.PasswordHash != null)
-    //    {
-    //        var isOldCorrect = _userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, changePassword.OldPassword);
-    //        if (!isOldCorrect.Equals(PasswordVerificationResult.Success))
-    //            return new AuthModel { Message = "Old password is incorrect!", ArMessage = "كلمة المرور القديمة غير صحيحة", ErrorCode = (int)Errors.OldPasswordIsIncorrect };
-    //    }
-    //    else
-    //    {
-    //        return new AuthModel { Message = "Old password is not Exist!", ArMessage = "كلمة المرور القديمة غير موجودة", ErrorCode = (int)Errors.OldPasswordIsExist };
-    //    }
-
-    //    user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, changePassword.NewPassword);
-    //    await _userManager.UpdateAsync(user);
-
-    //    var jwtSecurityToken = await GenerateJwtToken(user, 1);
-    //    var rolesList = await _userManager.GetRolesAsync(user);
-
-    //    var result = new AuthModel
-    //    {
-    //        Message = "The password has been changed successfully",
-    //        ArMessage = "تم تغيير كلمة المرور بنجاح",
-    //        Email = user.Email,
-    //        PhoneNumber = user.PhoneNumber,
-    //        UserImgUrl = user.UserImgUrl,
-    //        FirstName = user.FirstName,
-    //        LastName = user.LastName,
-    //        IsAuthenticated = true,
-    //        Roles = rolesList.ToList(),
-    //        UserType = user.UserType,
-    //        IsAdmin = user.IsAdmin,
-    //        Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken)
-    //    };
-    //    return result;
-    //}
-
-    ////-------------------------------------------------------------------------------------------------------------------------
-
-    //public async Task<AuthModel> UpdateUserProfile(string userId, UpdateUserMv model)
-    //{
-    //    var user = await _userManager.FindByIdAsync(userId);
-    //    if (user is null)
-    //        return new AuthModel {ErrorCode = (int)Errors.TheUserNotExistOrDeleted,Message = "User not found!", ArMessage = "المستخدم غير موجود" };
-    //    if (await Task.Run(() => _userManager.Users.Any(item => (item.PhoneNumber == model.PhoneNumber) && (item.Id != userId))))
-    //        return new AuthModel { Message = "this phone number is already Exist!", ArMessage = "هذا الرقم المحمول مستخدم من قبل" };
-    //    if (await Task.Run(() => _userManager.Users.Any(item => (item.Email == model.Email) && (item.Id != userId))))
-    //        return new AuthModel { Message = "this email is already Exist!", ArMessage = "هذا البريد الالكتروني مستخدم من قبل" };
-    //    string imgUrl = null;
-    //    try
-    //    {
-    //        if (model.Img != null)
-    //        {
-    //            switch (user.UserType)
-    //            {
-    //                case UserType.Admin: imgUrl = await _fileHandling.UploadFile(model.Img, "AdminImg", user.UserImgUrl);
-    //                    break;
-    //                case UserType.Youth: imgUrl = await _fileHandling.UploadFile(model.Img, "YouthImg", user.UserImgUrl);
-    //                    break;
-    //                case UserType.InitialProject: imgUrl = await _fileHandling.UploadFile(model.Img, "InitialProjectImg", user.UserImgUrl);
-    //                    break;
-    //            }
-    //        }
-    //    }
-    //    catch
-    //    {
-    //        return new AuthModel { Message = "error in uploading Img!", ArMessage = "حدث خطأ في رفع الصورة", ErrorCode = (int)Errors.ErrorInUploadingImg };
-    //    }
-    //    user.Email = model.Email;
-    //    user.NormalizedEmail = model.Email;
-    //    user.NormalizedUserName = model.Email;
-    //    user.UserName = model.Email;
+    //    user.FullName = model.FullName;
     //    user.PhoneNumber = model.PhoneNumber;
-    //    user.FirstName = model.FirstName;
-    //    user.LastName = model.LastName;
-    //    user.Qualification = model.Qualification;
-    //    user.UserImgUrl = (!string.IsNullOrEmpty(imgUrl)) ? imgUrl : user.UserImgUrl;
-    //    user.Job = model.Job;
-    //    user.Age = model.age;
-    //    await _userManager.UpdateAsync(user);
 
-    //    var jwtSecurityToken = await GenerateJwtToken(user);
-    //    var rolesList = await _userManager.GetRolesAsync(user);
+    //    await UpdateProfileImage(user, model.ImageProfile);
 
-    //    var result = new AuthModel
-    //    {
-    //        Message = "The profile has been updated successfully",
-    //        ArMessage = "تم تحديث الملف الشخصي بنجاح",
-    //        Email = user.Email,
-    //        PhoneNumber = user.PhoneNumber,
-    //        FirstName = user.FirstName,
-    //        LastName = user.LastName,
-    //        IsAuthenticated = true,
-    //        Qualification = user.Qualification,
-    //        Roles = rolesList.ToList(),
-    //        UserType = user.UserType,
-    //        UserImgUrl = user.UserImgUrl,
-    //        Job = user.Job,
-    //        Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken)
-    //    };
-    //    return result;
+    //    return await _userManager.UpdateAsync(user);
     //}
 
-    //public async Task<AuthModel> GetUserInfo(string userId)
+    //public async Task<IdentityResult> UpdateSupportDeveloper(string SupportDeveloperId, RegisterSupportDeveloper model)
     //{
-    //    var user = await _userManager.FindByIdAsync(userId);
-    //    if (user is null)
-    //        return new AuthModel {ErrorCode = (int)Errors.TheUserNotExistOrDeleted,Message = "User not found!", ArMessage = "المستخدم غير موجود" };
+    //    var user = await _userManager.FindByIdAsync(SupportDeveloperId);
+    //    if (user == null)
+    //        throw new ArgumentException("Admin not found");
 
-    //    var rolesList = await _userManager.GetRolesAsync(user);
-    //    var result = new AuthModel
+    //    user.FullName = model.FullName;
+
+    //    if (model.ImageProfile != null)
     //    {
-    //        Email = user.Email,
-    //        PhoneNumber = user.PhoneNumber,
-    //        FirstName = user.FirstName,
-    //        LastName = user.LastName,
-    //        IsAuthenticated = true,
-    //        Qualification = user.Qualification,
-    //        UserType = user.UserType,
-    //        UserImgUrl = user.UserImgUrl,
-    //        Job = user.Job,
-    //        Roles = rolesList.ToList(),
-    //        Status = user.Status,
-    //    };
-    //    return result;
-    //}
-
-    ////------------------------------------------------------------------------------------------------------------
-    //public async Task<string> AddRoleAsync(AddRoleModel model)
-    //{
-    //    var user = await _userManager.FindByIdAsync(model.UserId);
-    //    if (user is null)
-    //        return "User not found!";
-
-    //    if (model.Roles != null && model.Roles.Count > 0)
-    //    {
-    //        foreach (var role in model.Roles)
+    //        var path = await GetPathByName("ProfileImages");
+    //        try
     //        {
-    //            if (!await _roleManager.RoleExistsAsync(role))
-    //                return "Invalid Role";
-    //            if (await _userManager.IsInRoleAsync(user, role))
-    //                return "User already assigned to this role";
+    //            var newProfileId = await _fileHandling.UpdateFile(model.ImageProfile, path, user.ProfileId);
+    //            user.ProfileId = newProfileId;
     //        }
-    //        var result = await _userManager.AddToRolesAsync(user, model.Roles);
-
-    //        return result.Succeeded ? string.Empty : "Something went wrong";
-    //    }
-    //    return " Role is empty";
-    //}
-
-    //public Task<List<string>> GetRoles()
-    //{
-    //    return _roleManager.Roles.Select(x => x.Name).ToListAsync();
-    //}
-
-    ////------------------------------------------------------------------------------------------------------------
-
-    //public async Task Activate(string userId)
-    //{
-    //    var user = await _userManager.FindByIdAsync(userId);
-    //    if (user != null)
-    //    {
-    //        user.Status = true;
-    //        await _userManager.UpdateAsync(user);
-    //    }
-    //}
-
-    //public async Task Suspend(string userId)
-    //{
-    //    var user = await _userManager.FindByIdAsync(userId);
-    //    if (user != null)
-    //    {
-    //        user.Status = false;
-    //        await _userManager.UpdateAsync(user);
-    //    }
-    //}
-
-    ////------------------------------------------------------------------------------------------------------------
-
-    //#region create and validate JWT token
-
-    //private async Task<JwtSecurityToken> GenerateJwtToken(ApplicationUser user, int? time = null)
-    //{
-    //    var userClaims = await _userManager.GetClaimsAsync(user);
-    //    var roles = await _userManager.GetRolesAsync(user);
-    //    var roleClaims = roles.Select(role => new Claim("roles", role)).ToList();
-    //    var userType = user.UserType.ToString();
-
-    //    var claims = new[]
+    //        catch (Exception ex)
     //        {
-    //            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-    //            new Claim("uid", user.Id),
-    //            new Claim("Name", user.Email),
-    //            new Claim("userType",userType),
-    //            (user.IsAdmin) ? new Claim("isAdmin", "true") : new Claim("isAdmin", "false"),
+    //            // Log the exception
+    //            Console.WriteLine($"Error updating file: {ex.Message}");
+    //            throw new InvalidOperationException("Failed to update profile image", ex);
     //        }
-    //        .Union(userClaims)
-    //        .Union(roleClaims);
+    //    }
 
-    //    var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
-    //    var signingCredentials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
-
-    //    var jwtSecurityToken = new JwtSecurityToken(
-    //        issuer: _jwt.Issuer,
-    //        audience: _jwt.Audience,
-    //        claims: claims,
-    //        expires: (time != null) ? DateTime.Now.AddHours((double)time) : DateTime.Now.AddDays(_jwt.DurationInDays),
-    //        signingCredentials: signingCredentials);
-
-    //    return jwtSecurityToken;
-    //}
-
-
-    //public string ValidateJwtToken(string token)
-    //{
-    //    var tokenHandler = new JwtSecurityTokenHandler();
     //    try
     //    {
-    //        if (token == null)
-    //            return null;
-    //        if (token.StartsWith("Bearer "))
-    //            token = token.Replace("Bearer ", "");
-
-    //        tokenHandler.ValidateToken(token, new TokenValidationParameters
+    //        var result = await _userManager.UpdateAsync(user);
+    //        if (!result.Succeeded)
     //        {
-    //            ValidateIssuerSigningKey = true,
-    //            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key)),
-    //            ValidateIssuer = false,
-    //            ValidateAudience = false,
-    //            ClockSkew = TimeSpan.Zero
-    //        }, out var validatedToken);
-
-    //        var jwtToken = (JwtSecurityToken)validatedToken;
-    //        var accountId = jwtToken.Claims.First(x => x.Type == "uid").Value;
-
-    //        return accountId;
+    //            // Log errors
+    //            Console.WriteLine($"Error updating user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+    //            throw new InvalidOperationException($"Error updating user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+    //        }
+    //        return result;
     //    }
-    //    catch
+    //    catch (Exception ex)
     //    {
-    //        return null;
+    //        // Log the exception
+    //        Console.WriteLine($"Error updating user: {ex.Message}");
+    //        throw new InvalidOperationException("Failed to update admin", ex);
     //    }
     //}
+    //------------------------------------------------------------------------------------------------------------
+    public async Task<(bool IsSuccess, string Token, string ErrorMessage)> Login(LoginModel model)
+    {
+        try
+        {
+            var user = await _userManager.FindByNameAsync(model.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
+            {
+                return (false, null, "Invalid login attempt.");
+            }
 
-    //#endregion create and validate JWT token
+            // Check if user status is true and phone number is confirmed
+            if (!user.Status)
+            {
+                return (false, null, "Your account is deactivated. Please contact support.");
+            }
 
-    //#region Random number and string
+            if (!user.EmailConfirmed)
+            {
+                return (false, null, "Email not confirmed. Please verify your Email.");
+            }
 
-    ////Generate RandomNo
-    //public int GenerateRandomNo()
-    //{
-    //    const int min = 1000;
-    //    const int max = 9999;
-    //    var rdm = new Random();
-    //    return rdm.Next(min, max);
-    //}
+            // Proceed with login
+            await _signInManager.SignInAsync(user, model.RememberMe);
+            var token = await GenerateJwtToken(user);
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
+            return (true, tokenString, null);
+        }
+        catch (Exception ex)
+        {
+            return (false, null, ex.Message);
+        }
+    }
 
-    //public  string RandomString(int length)
-    //{
-    //    var random = new Random();
-    //    const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    //    return new string(Enumerable.Repeat(chars, length)
-    //        .Select(s => s[random.Next(s.Length)]).ToArray());
-    //}
+    public async Task<bool> Logout(ApplicationUser user)
+    {
+        if (user == null)
+            return false;
 
-    //#endregion Random number and string
+        await _signInManager.SignOutAsync();
+        return true;
+    }
 
-    ////----------------------------------------------------------------------------------------------------- Function Connection
-    //public async Task<bool> ActiveUserConnnection(string userId)
-    //{
-    //    if (string.IsNullOrEmpty(userId))
-    //    {
-    //        return false;
-    //    }
-    //    var UserConnection = new UserConnection
-    //    {
-    //        UserId = userId,
-    //    };
-    //    try
-    //    {
-    //        await _unitOfWork.UserConnections.AddAsync(UserConnection);
-    //        await _unitOfWork.SaveChangesAsync();
-    //    }
-    //    catch
-    //    {
-    //        return false;
-    //    }
+    public async Task<bool> ValidateOTP(string Email, string OTP)
+    {
+        var user =await _userManager.FindByNameAsync(Email);
+        if(OTP == user.OTP)
+        {
+            user.EmailConfirmed = true;
+            await _unitOfWork.SaveChangesAsync();
+            return true;
+        }
+        return false;
+    }
 
-    //    return true;
-    //}
+    //------------------------------------------------------------------------------------------------------------
 
-    //public async Task<bool> DisActiveUserConnnection(string userId)
-    //{
-    //    if (string.IsNullOrEmpty(userId))
-    //    {
-    //        return false;
-    //    }
-    //    var UserConnection = new UserConnection
-    //    {
-    //        UserId = userId,
-    //        Connection = false
-    //    };
-    //    try
-    //    {
-    //        await _unitOfWork.UserConnections.AddAsync(UserConnection);
-    //        await _unitOfWork.SaveChangesAsync();
-    //    }
-    //    catch
-    //    {
-    //        return false;
-    //    }
+    public async Task<Paths> GetPathByName(string name)
+    {
+        var path = await _unitOfWork.PathsRepository.FindAsync(x => x.Name == name);
+        if (path == null) throw new ArgumentException("Path not found");
+        return path;
+    }
+    //------------------------------------------------------------------------------------------------------------
+    public async Task<string> AddRoleAsync(RoleUserModel model)
+    {
+        var user = await _userManager.FindByIdAsync(model.UserId);
+        if (user is null)
+            return "Vendor not found!";
 
-    //    return true;
-    //}
+        if (model.RoleId != null && model.RoleId.Count() > 0)
+        {
+            var roleUser = _userManager.GetRolesAsync(user).Result;
+            IEnumerable<string> roles = new List<string>();
+            foreach (var roleid in model.RoleId)
+            {
+                var role = _roleManager.FindByIdAsync(roleid).Result.Name;
+                if (roleUser.Contains(role))
+                {
+                    roles.Append(role);
+                }
+            }
+            var result = await _userManager.AddToRolesAsync(user, roles);
+
+            return result.Succeeded ? string.Empty : "Something went wrong";
+        }
+        return " Role is empty";
+    }
+
+    public Task<List<string>> GetRoles()
+    {
+        return _roleManager.Roles.Select(x => x.Name).ToListAsync();
+    }
+
+    //------------------------------------------------------------------------------------------------------------
+    public async Task<IdentityResult> Activate(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            throw new ArgumentException("Admin not found");
+
+        user.Status = true;
+        return await _userManager.UpdateAsync(user);
+    }
+
+    public async Task<IdentityResult> Suspend(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            throw new ArgumentException("Admin not found");
+
+        user.Status = false;
+        return await _userManager.UpdateAsync(user);
+    }
+
+    public async Task<string> GetUserProfileImage(string profileId)
+    {
+        if (string.IsNullOrEmpty(profileId))
+        {
+            return null;
+        }
+
+        var profileImage = await _fileHandling.GetFile(profileId);
+        return profileImage;
+    }
+    //------------------------------------------------------------------------------------------------------------
+    #region create and validate JWT token
+
+    private async Task<JwtSecurityToken> GenerateJwtToken(ApplicationUser user)
+    {
+        var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("uid", user.Id),
+                new Claim("name", user.FullName),
+                new Claim(ClaimTypes.Role, "Customer"),
+                new Claim("profileImage", await _fileHandling.GetFile(user.ProfileId)),
+                new Claim(ClaimTypes.MobilePhone, user.PhoneNumber)
+            };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            _jwt.Issuer,
+            _jwt.Audience,
+            claims,
+            expires: DateTime.Now.AddDays(Convert.ToDouble(_jwt.DurationInDays)),
+            signingCredentials: creds);
+        return token;
+    }
+
+    public string ValidateJwtToken(string token)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        try
+        {
+            if (token == null)
+                return null;
+            if (token.StartsWith("Bearer "))
+                token = token.Replace("Bearer ", "");
+
+            tokenHandler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key)),
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ClockSkew = TimeSpan.Zero
+            }, out var validatedToken);
+
+            var jwtToken = (JwtSecurityToken)validatedToken;
+            var accountId = jwtToken.Claims.First(x => x.Type == "uid").Value;
+
+            return accountId;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    #endregion create and validate JWT token
+
+    #region Random number and string
+
+    //Generate RandomNo
+    public int GenerateRandomNo()
+    {
+        const int min = 1000;
+        const int max = 9999;
+        var rdm = new Random();
+        return rdm.Next(min, max);
+    }
+
+    public string RandomString(int length)
+    {
+        var random = new Random();
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        return new string(Enumerable.Repeat(chars, length)
+            .Select(s => s[random.Next(s.Length)]).ToArray());
+    }
+
+    public string RandomOTP(int length)
+    {
+        var random = new Random();
+        const string chars = "0123456789";
+        return new string(Enumerable.Repeat(chars, length)
+            .Select(s => s[random.Next(s.Length)]).ToArray());
+    }
+
+    #endregion Random number and string
 }

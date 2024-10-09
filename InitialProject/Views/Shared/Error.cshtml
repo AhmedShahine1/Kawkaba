@@ -1,0 +1,14 @@
+﻿@model ErrorViewModel
+
+<section class="content">
+    <div class="error-page">
+        <h2 class="headline text-danger">@Model.StatusCode</h2>
+        <div class="error-content">
+            <h3><i class="fas fa-exclamation-triangle text-danger"></i> @Model.Message</h3>
+            <p>
+                @Model.StackTrace
+            </p>
+        </div>
+    </div>
+    <!-- /.error-page -->
+</section>

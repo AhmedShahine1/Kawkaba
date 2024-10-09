@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using System.Linq.Expressions;
-using InitialProject.Core;
-using InitialProject.RepositoryLayer.Interfaces;
+using Kawkaba.Core;
+using Kawkaba.RepositoryLayer.Interfaces;
 
-namespace InitialProject.RepositoryLayer.Repositories;
+namespace Kawkaba.RepositoryLayer.Repositories;
 
 public class BaseRepository<T> : IBaseRepository<T> where T : class
 {
@@ -36,12 +36,12 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
         return await query.ToListAsync();
     }
 
-    public T GetById(int id)
+    public T GetById(string id)
     {
         return Context.Set<T>().Find(id);
     }
 
-    public async Task<T> GetByIdAsync(int id)
+    public async Task<T> GetByIdAsync(string id)
     {
         return await Context.Set<T>().FindAsync(id);
     }

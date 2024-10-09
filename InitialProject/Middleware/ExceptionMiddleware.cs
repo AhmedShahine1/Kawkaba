@@ -1,9 +1,9 @@
 using System.Net;
 using System.Text.Json;
-using InitialProject.Core.DTO;
+using Kawkaba.Core.DTO;
 
 
-namespace InitialProject.Middleware;
+namespace Kawkaba.Middleware;
 
 public class ExceptionMiddleware
 {

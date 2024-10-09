@@ -1,12 +1,12 @@
 ﻿using System.Text.Json.Serialization;
-using InitialProject.BusinessLayer.Interfaces;
-using InitialProject.BusinessLayer.Services;
-using InitialProject.Core;
-using InitialProject.RepositoryLayer.Interfaces;
-using InitialProject.RepositoryLayer.Repositories;
+using Kawkaba.BusinessLayer.Interfaces;
+using Kawkaba.BusinessLayer.Services;
+using Kawkaba.Core;
+using Kawkaba.RepositoryLayer.Interfaces;
+using Kawkaba.RepositoryLayer.Repositories;
 using Microsoft.EntityFrameworkCore;
 
-namespace InitialProject.Extensions;
+namespace Kawkaba.Extensions;
 
 public static class ContextServicesExtensions
 {

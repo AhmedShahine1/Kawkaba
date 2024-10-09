@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Layout</title>
+    <link rel="stylesheet" href="~/lib/css/style.css">
+    <link href="~/lib/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="containerstyle">
+        <div class="right-side">
+            <div class="logo">
+                <img src="~/asset/Logo.svg" alt="Logo">
+            </div>
+            <div class="content">
+                <div class="center-text">
+                    @RenderBody()
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- jQuery -->
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    <!-- Bootstrap 4 -->
+    <script src="~/lib/bootstrap/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -1,29 +1,32 @@
-﻿namespace InitialProject.BusinessLayer.Interfaces;
+﻿using Kawkaba.Core.DTO.AuthViewModel;
+using Kawkaba.Core.DTO.AuthViewModel.RegisterModel;
+using Kawkaba.Core.DTO.AuthViewModel.RoleModel;
+using Kawkaba.Core.Entity.ApplicationData;
+using Kawkaba.Core.Entity.Files;
+using Microsoft.AspNetCore.Identity;
+
+namespace Kawkaba.BusinessLayer.Interfaces;
 
 public interface IAccountService
 {
-    //Task<List<ApplicationUser>> GetAllUsers();
-    //Task<ApplicationUser> GetUserById(string userId);
-    //Task<ApplicationUser> GetUserByPhoneNumber(string phoneNumber);
-    //Task<ApplicationUser> GetUserByEmail(string email);
-    //Task<AuthModel> RegisterInitialProject(RegisterInitialProject model);
-    //Task<AuthModel> RegisterYouth(RegisterYouth model);
-    //Task<AuthModel> RegisterAdmin(RegisterAdmin model);
-    //Task<AuthModel> LoginAsync(LoginModel model);
-    //Task<bool> Logout(string userName);
-    //Task<AuthModel> ChangePasswordAsync(string userId, string password);
-    //Task<AuthModel> ChangeOldPasswordAsync(string userId, ChangeOldPassword changePassword);
-    //Task<AuthModel> UpdateUserProfile(string userId, UpdateUserMv updateUser);
-    //Task<AuthModel> GetUserInfo(string userId);
-    //Task<string> AddRoleAsync(AddRoleModel model);
-    //Task<List<string>> GetRoles();
-
-    //string ValidateJwtToken(string token);
-    //int GenerateRandomNo();
+    Task<ApplicationUser> GetUserById(string id);
+    Task<IdentityResult> RegisterAdmin(RegisterAdmin model);
+    //Task<IdentityResult> UpdateAdmin(string adminId, RegisterAdmin model);
+    Task<IdentityResult> RegisterSupportDeveloper(RegisterSupportDeveloper model);
+    //Task<IdentityResult> UpdateSupportDeveloper(string SupportDeveloperId, RegisterSupportDeveloper model);
+    Task<IdentityResult> RegisterEmployee(RegisterEmployee model);
+    Task<IdentityResult> RegisterCompany(RegisterCompany model);
+    Task<(bool IsSuccess, string Token, string ErrorMessage)> Login(LoginModel model);
+    Task<bool> Logout(ApplicationUser user);
+    Task<bool> ValidateOTP(string customerPhoneNumber, string OTPV);
+    Task<ApplicationUser> GetUserFromToken(string token);
+    Task<string> AddRoleAsync(RoleUserModel model);
+    Task<List<string>> GetRoles();
+    Task<string> GetUserProfileImage(string profileId);
+    Task<Paths> GetPathByName(string name);
+    string ValidateJwtToken(string token);
+    int GenerateRandomNo();
     ////------------------------------------------------------
-    //Task Activate(string userId);
-    //Task Suspend(string userId);
-    //string RandomString(int length);
-    //Task<bool> DisActiveUserConnnection(string userId);
-    //Task<bool> ActiveUserConnnection(string userId);
+    Task<IdentityResult> Activate(string userId);
+    Task<IdentityResult> Suspend(string userId);
 }

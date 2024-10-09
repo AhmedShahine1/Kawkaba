@@ -1,4 +1,4 @@
-/* jquery.signalR.InitialProject.Core.js */
+/* jquery.signalR.Mohamy.Core.js */
 /*global window:false */
 /*!
  * ASP.NET SignalR JavaScript Library 2.4.3
@@ -27,7 +27,7 @@
         errorParsingStartResponse: "Error parsing start response: '{0}'. Stopping the connection.",
         invalidStartResponse: "Invalid start response: '{0}'. Stopping the connection.",
         protocolIncompatible: "You are using a version of the client that isn't compatible with the server. Client version {0}, server version {1}.",
-        AspNet.CoreSignalrServer: "Detected a connection attempt to an ASP.NET InitialProject.Core SignalR Server. This client only supports connecting to an ASP.NET SignalR Server. See https://aka.ms/signalr-InitialProject.Core-differences for details.",
+        AspNet.CoreSignalrServer: "Detected a connection attempt to an ASP.NET Mohamy.Core SignalR Server. This client only supports connecting to an ASP.NET SignalR Server. See https://aka.ms/signalr-Mohamy.Core-differences for details.",
         sendFailed: "Send failed.",
         parseFailed: "Failed at parsing response: {0}",
         longPollFailed: "Long polling request failed.",
@@ -729,7 +729,7 @@
                             return;
                         }
 
-                        // Check if the server is an ASP.NET InitialProject.Core app
+                        // Check if the server is an ASP.NET Mohamy.Core app
                         if (res.availableTransports) {
                             protocolError = signalR._.error(resources.AspNet.CoreSignalrServer);
                             $(connection).triggerHandler(events.onError, [protocolError]);
@@ -1090,7 +1090,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 /*global window:false */
-/// <reference path="jquery.signalR.InitialProject.Core.js" />
+/// <reference path="jquery.signalR.Mohamy.Core.js" />
 
 (function ($, window, undefined) {
 
@@ -2687,7 +2687,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 /*global window:false */
-/// <reference path="jquery.signalR.InitialProject.Core.js" />
+/// <reference path="jquery.signalR.Mohamy.Core.js" />
 
 (function ($, window, undefined) {
 
@@ -3167,7 +3167,7 @@
 
 
 /*global window:false */
-/// <reference path="jquery.signalR.InitialProject.Core.js" />
+/// <reference path="jquery.signalR.Mohamy.Core.js" />
 (function ($, undefined) {
     // This will be modified by the build script
     $.signalR.version = "2.4.3";

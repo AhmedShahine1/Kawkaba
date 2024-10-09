@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
-namespace InitialProject.Core.Helpers
+namespace Kawkaba.Core.Helpers
 {
     public static class JsonFormatter
     {

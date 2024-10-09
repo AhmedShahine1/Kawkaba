@@ -1204,7 +1204,7 @@ class HubConnection {
     constructor(connection, logger, protocol, reconnectPolicy, serverTimeoutInMilliseconds, keepAliveIntervalInMilliseconds, statefulReconnectBufferSize) {
         this._nextKeepAlive = 0;
         this._freezeEventListener = () => {
-            this._logger.log(LogLevel.Warning, "The page is being frozen, this will likely lead to the connection being closed and messages being lost. For more information see the docs at https://learn.microsoft.com/aspnet/InitialProject.Core/signalr/javascript-client#bsleep");
+            this._logger.log(LogLevel.Warning, "The page is being frozen, this will likely lead to the connection being closed and messages being lost. For more information see the docs at https://learn.microsoft.com/aspnet/Mohamy.Core/signalr/javascript-client#bsleep");
         };
         Arg.isRequired(connection, "connection");
         Arg.isRequired(logger, "logger");
@@ -2846,7 +2846,7 @@ class HttpConnection {
                         throw new Error(negotiateResponse.error);
                     }
                     if (negotiateResponse.ProtocolVersion) {
-                        throw new Error("Detected a connection attempt to an ASP.NET SignalR Server. This client only supports connecting to an ASP.NET InitialProject.Core SignalR Server. See https://aka.ms/signalr-InitialProject.Core-differences for details.");
+                        throw new Error("Detected a connection attempt to an ASP.NET SignalR Server. This client only supports connecting to an ASP.NET Mohamy.Core SignalR Server. See https://aka.ms/signalr-Mohamy.Core-differences for details.");
                     }
                     if (negotiateResponse.url) {
                         url = negotiateResponse.url;

@@ -1,0 +1,18 @@
+﻿@model List<Dictionary<string, object>>
+
+<h2>Chat Messages</h2>
+
+<ul>
+    @foreach (var message in Model)
+    {
+        <li>
+            <strong>@message["content"]</strong> (@message["timestamp"])
+        </li>
+    }
+</ul>
+
+<h3>Add a new message</h3>
+<form method="post" asp-action="AddMessage" asp-route-chatId="@ViewData["chatId"]">
+    <textarea name="content" rows="3" cols="40"></textarea><br />
+    <button type="submit">Send</button>
+</form>

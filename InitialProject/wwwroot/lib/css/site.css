@@ -1,0 +1,131 @@
+﻿* {
+    font-family: "Zain", sans-serif;
+}
+body {
+    margin: 0;
+    font-family: "Zain", sans-serif;
+    background-color: #F5F5F5;
+    direction: rtl;
+    text-align: right;
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 200px; /* Sidebar fixed width */
+    background-color: #4055a8;
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    border-left: 1px solid #ddd;
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    scrollbar-width: thin;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Take the remaining space */
+    margin-right: 250px; /* Leave space for the sidebar */
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
+    width: 100%;
+}
+
+    .header .search-bar {
+        display: flex;
+        align-items: center;
+        background-color: #F5F5F5;
+        border-radius: 20px;
+        padding: 5px 10px;
+        width: 300px;
+    }
+
+        .header .search-bar input {
+            border: none;
+            background: none;
+            outline: none;
+            width: 100%;
+            padding: 5px;
+        }
+
+        .header .search-bar i {
+            color: #888;
+        }
+
+    .header .notification {
+        font-size: 24px;
+        color: #1A237E;
+        position: relative;
+    }
+
+        .header .notification .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #FF6F00;
+            color: #fff;
+            border-radius: 50%;
+            padding: 2px 5px;
+            font-size: 12px;
+        }
+
+.content {
+    flex-grow: 1;
+    padding: 0px 20px 0 20px ;
+    overflow-y: auto;
+    text-align: right;
+}
+
+.form-check-input {
+    margin-left: 10px; /* Space between the checkbox and the label */
+    margin-right: 0; /* Since text is aligned to the right, no margin on the right side */
+}
+.sidebar .logo {
+    text-align: center;
+    padding-bottom: 60px;
+    padding-top: 25px;
+}
+
+.sidebar .menu {
+    list-style: none;
+    padding: 0;
+    flex-grow: 1;
+}
+
+    .sidebar .menu li {
+        color: #4055a8;
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+
+        .sidebar .menu li i {
+            margin-left: 10px;
+            color: #888;
+        }
+
+.sidebar .profile {
+    color: #FFFFFF;
+    text-align: center;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+}
+
+    .sidebar .profile img {
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+    }

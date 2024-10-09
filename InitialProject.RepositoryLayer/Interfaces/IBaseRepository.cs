@@ -1,13 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore.Query;
 using System.Linq.Expressions;
 
-namespace InitialProject.RepositoryLayer.Interfaces;
+namespace Kawkaba.RepositoryLayer.Interfaces;
 
 public interface IBaseRepository<T> where T : class
 {
-    T GetById(int id);
+    T GetById(string id);
 
-    Task<T> GetByIdAsync(int id);
+    Task<T> GetByIdAsync(string id);
 
     IEnumerable<T> GetAll(Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null);
 

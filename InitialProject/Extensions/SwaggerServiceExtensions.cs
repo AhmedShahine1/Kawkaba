@@ -1,5 +1,5 @@
 ﻿using Microsoft.OpenApi.Models;
-namespace InitialProject.Extensions;
+namespace Kawkaba.Extensions;
 
 public static class SwaggerServiceExtensions
 {
@@ -10,7 +10,7 @@ public static class SwaggerServiceExtensions
         services.AddSwaggerGen(options =>
         {
 
-            options.SwaggerDoc("v1", new OpenApiInfo { Title = "InitialProject", Version = "v1" });
+            options.SwaggerDoc("v1", new OpenApiInfo { Title = "Kawkaba", Version = "v1" });
             // options.OperationFilter<CustomHeaderSwaggerAttribute>();
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {

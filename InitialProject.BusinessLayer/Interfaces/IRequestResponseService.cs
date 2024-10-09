@@ -1,11 +1,11 @@
-﻿using InitialProject.Core.DTO.EntityDTO;
+﻿using Kawkaba.Core.DTO.AuthViewModel.RequesrLog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace InitialProject.BusinessLayer.Interfaces
+namespace Kawkaba.BusinessLayer.Interfaces
 {
     public interface IRequestResponseService
     {

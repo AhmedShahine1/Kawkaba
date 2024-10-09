@@ -1,8 +1,9 @@
-﻿using InitialProject.BusinessLayer.Interfaces;
-using InitialProject.Core.Helpers;
+﻿using Kawkaba.BusinessLayer.Interfaces;
+using Kawkaba.Core.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace InitialProject.Areas.Support.Controllers
+namespace Kawkaba.Areas.Support.Controllers
 {
     [Area("Support")]
     public class RequestResponseViewerController : Controller
@@ -13,7 +14,7 @@ namespace InitialProject.Areas.Support.Controllers
         {
             _requestResponseService = requestResponseService;
         }
-
+        [Authorize(Policy = "Support Developer")]
         public async Task<IActionResult> Index()
         {
             var logs = await _requestResponseService.GetAllLogsAsync();

@@ -2,8 +2,8 @@
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using InitialProject.Core.DTO.EntityDTO;
-using InitialProject.BusinessLayer.Interfaces;
+using Kawkaba.BusinessLayer.Interfaces;
+using Kawkaba.Core.DTO.AuthViewModel.RequesrLog;
 
 public class RequestResponseLoggingMiddleware
 {

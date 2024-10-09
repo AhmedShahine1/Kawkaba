@@ -1,89 +1,142 @@
-﻿using InitialProject.BusinessLayer.Interfaces;
+﻿using Kawkaba.BusinessLayer.Interfaces;
+using Kawkaba.RepositoryLayer.Interfaces;
+using Kawkaba.Core.Entity.Files;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
-namespace InitialProject.BusinessLayer.Services;
+namespace Kawkaba.BusinessLayer.Services;
 
 public class FileHandling : IFileHandling
 {
-    private readonly IWebHostEnvironment _webHostEnvironment;
+    private readonly IWebHostEnvironment webHostEnvironment;
+    private readonly IUnitOfWork unitOfWork;
 
-    public FileHandling(IWebHostEnvironment webHostEnvironment)
+    public FileHandling(IWebHostEnvironment _webHostEnvironment, IUnitOfWork _unitOfWork)
     {
-        _webHostEnvironment = webHostEnvironment;
+        webHostEnvironment = _webHostEnvironment;
+        unitOfWork = _unitOfWork;
     }
 
     #region Photo Handling
 
-    public async Task<string> UploadFile(IFormFile file, string folder, string oldFilePAth = null)
+    public async Task<string> UploadFile(IFormFile file, Paths paths, string oldFilePath = null)
     {
-        var uploads = Path.Combine(_webHostEnvironment.WebRootPath, $"Files/{folder}");
+        var uploads = Path.Combine(webHostEnvironment.WebRootPath, paths.Name);
         if (!Directory.Exists(uploads))
         {
             Directory.CreateDirectory(uploads);
         }
-        var uniqueFileName = RandomString(10) + "_" + file.FileName;
+
+        var uniqueFileName = $"{RandomString(10)}_{file.FileName}";
         var filePath = Path.Combine(uploads, uniqueFileName);
+
         await using (var fileStream = new FileStream(filePath, FileMode.Create))
         {
             await file.CopyToAsync(fileStream);
         }
-        var path = Path.Combine($"/Files/{folder}", uniqueFileName);
-        var old = $"{_webHostEnvironment.WebRootPath}/{oldFilePAth}";
-        if (oldFilePAth != null && File.Exists(old))
+
+        var image = new Images
         {
-            File.Delete(old);
+            Name = uniqueFileName,
+            pathId = paths.Id,
+            path = paths
+        };
+        await unitOfWork.ImagesRepository.AddAsync(image);
+        await unitOfWork.SaveChangesAsync();
+
+        if (!string.IsNullOrEmpty(oldFilePath) && File.Exists(Path.Combine(webHostEnvironment.WebRootPath, oldFilePath)))
+        {
+            File.Delete(Path.Combine(webHostEnvironment.WebRootPath, oldFilePath));
         }
-        return path;
+
+        return image.Id;
     }
 
-    public async Task<string> UploadPhotoBase64(string stringFile, string folderName = "Student", string oldFilePAth = null)
+    public async Task<string> DefaultProfile(Paths paths)
     {
-        var mystr = stringFile.Split(',').ToList();
-        var type = mystr[0].Split('/').ToList()[1].Split(';').ToList()[0];
-        var byteFile = Convert.FromBase64String(mystr[1]);
-
-        var stream = new MemoryStream(byteFile);
-        IFormFile file = new FormFile(stream, 0, byteFile.Length, "Name", folderName);
-
-        var uploads = Path.Combine(_webHostEnvironment.WebRootPath, $"File/{folderName}");
+        var uploads = Path.Combine(webHostEnvironment.WebRootPath, paths.Name);
+        var sourcePath = Path.Combine(webHostEnvironment.WebRootPath, "asset", "user.jpg");
         if (!Directory.Exists(uploads))
         {
             Directory.CreateDirectory(uploads);
         }
-        var uniqueFileName = RandomString(10) + "_" + file.FileName + "." + type;
+        var uniqueFileName = $"{RandomString(10)}_UserIcon.jpg";
+        var destinationPath = Path.Combine(uploads, uniqueFileName);
+        File.Copy(sourcePath, destinationPath, true);
+        var image = new Images
+        {
+            Name = uniqueFileName,
+            pathId = paths.Id,
+            path = paths
+        };
+        await unitOfWork.ImagesRepository.AddAsync(image);
+        await unitOfWork.SaveChangesAsync();
+        return image.Id;
+    }
+
+    public async Task<string> GetFile(string imageId)
+    {
+        var image = await unitOfWork.ImagesRepository
+            .FindByQuery(x => x.Id == imageId)
+            .Include(s => s.path)
+            .FirstOrDefaultAsync();
+
+        if (image == null)
+        {
+            throw new FileNotFoundException("Image not found.");
+        }
+
+        return Path.Combine($"/{image.path.Name}/{image.Name}");
+    }
+
+    public async Task<string> UpdateFile(IFormFile file, Paths paths, string imageId)
+    {
+        var image = await unitOfWork.ImagesRepository
+            .FindByQuery(x => x.Id == imageId)
+            .Include(s => s.path)
+            .FirstOrDefaultAsync();
+
+        if (image == null)
+        {
+            throw new ArgumentException("Image not found");
+        }
+
+        var uploads = Path.Combine(webHostEnvironment.WebRootPath, paths.Name);
+        if (!Directory.Exists(uploads))
+        {
+            Directory.CreateDirectory(uploads);
+        }
+
+        var uniqueFileName = $"{RandomString(10)}_{file.FileName}";
         var filePath = Path.Combine(uploads, uniqueFileName);
+
         await using (var fileStream = new FileStream(filePath, FileMode.Create))
         {
             await file.CopyToAsync(fileStream);
         }
-        var path = Path.Combine($"/File/{folderName}", uniqueFileName);
-        var old = $"{_webHostEnvironment.WebRootPath}/{oldFilePAth}";
-        if (oldFilePAth != null && File.Exists(old))
+
+        var oldFilePath = Path.Combine(webHostEnvironment.WebRootPath, $"{image.path.Name}/{image.Name}");
+        image.Name = uniqueFileName;
+        image.pathId = paths.Id;
+        image.path = paths;
+
+        unitOfWork.ImagesRepository.Update(image);
+        await unitOfWork.SaveChangesAsync();
+
+        if (File.Exists(oldFilePath))
         {
-            File.Delete(old);
+            File.Delete(oldFilePath);
         }
-        return path;
+
+        return image.Id;
     }
 
-    public async Task<string> UploadPhotoByte(byte[] byteFile, string folder = "Student", string oldFilePAth = null)
+    private static string RandomString(int length)
     {
-        var stream = new MemoryStream(byteFile);
-        IFormFile file = new FormFile(stream, 0, byteFile.Length, "Name", folder);
-        return await UploadFile(file, folder, oldFilePAth);
-    }
-
-    public static string RandomString(int length)
-    {
-        var random = new Random();
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        return new string(Enumerable.Repeat(chars, length)
-            .Select(s => s[random.Next(s.Length)]).ToArray());
-    }
-
-    public string GetFile(string foo)
-    {
-        return _webHostEnvironment.WebRootFileProvider.GetFileInfo(foo)?.PhysicalPath;
+        var random = new Random();
+        return new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
     #endregion Photo Handling
