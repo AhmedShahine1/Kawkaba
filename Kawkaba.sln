@@ -23,8 +23,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kawkaba.RepositoryLayer", "
 		{2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6} = {2A2E85D9-0DA2-48AA-BDBF-B7704F7D71D6}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KawkabaTest", "KawkabaTest\KawkabaTest.csproj", "{4D555D5F-5110-4FBA-9E63-ECC4EE7E632C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,10 +45,6 @@ Global
 		{8282FBB3-19EF-4F5A-AEB2-8F7FC8D9048A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8282FBB3-19EF-4F5A-AEB2-8F7FC8D9048A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8282FBB3-19EF-4F5A-AEB2-8F7FC8D9048A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4D555D5F-5110-4FBA-9E63-ECC4EE7E632C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4D555D5F-5110-4FBA-9E63-ECC4EE7E632C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4D555D5F-5110-4FBA-9E63-ECC4EE7E632C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4D555D5F-5110-4FBA-9E63-ECC4EE7E632C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

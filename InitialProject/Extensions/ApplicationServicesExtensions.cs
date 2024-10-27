@@ -1,6 +1,10 @@
 ﻿using Kawkaba.BusinessLayer.AutoMapper;
 using Kawkaba.BusinessLayer.Interfaces;
 using Kawkaba.BusinessLayer.Services;
+using Kawkaba.Core.Entity.Posts;
+using Kawkaba.Core.Entity.RequestEmployee;
+using Kawkaba.Core.Helpers;
+using System.Configuration;
 
 namespace Kawkaba.Extensions;
 
@@ -21,7 +25,12 @@ public static class ApplicationServicesExtensions
         });
         services.AddTransient<IAccountService, AccountService>();
         services.AddTransient<IEmailService, EmailService>();
+        services.AddTransient<ICompanyService, CompanyService>();
+        services.AddTransient<IPostService, PostService>();
         services.AddTransient<IFileHandling, FileHandling>();
+        services.AddTransient<IAgoraService, AgoraService>();
+        services.Configure<AgoraSettings>(config.GetSection("AgoraSettings"));
+
         services.AddHttpClient();
         services.AddAutoMapper(typeof(MappingProfile));
         return services;

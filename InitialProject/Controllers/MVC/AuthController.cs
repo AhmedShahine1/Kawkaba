@@ -65,7 +65,7 @@ namespace Kawkaba.Controllers.MVC
         }
 
         //[HttpGet]
-        //public async Task<IActionResult> Profile()
+        //public async Task<IActionResult> Files()
         //{
         //    var token = HttpContext.Request.Cookies["AuthToken"];
         //    if (string.IsNullOrEmpty(token))

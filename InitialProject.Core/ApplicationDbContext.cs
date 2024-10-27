@@ -1,5 +1,7 @@
 ﻿using Kawkaba.Core.Entity.ApplicationData;
 using Kawkaba.Core.Entity.Files;
+using Kawkaba.Core.Entity.Posts;
+using Kawkaba.Core.Entity.RequestEmployee;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +26,8 @@ namespace Kawkaba.Core
         public virtual DbSet<Paths> Paths { get; set; }
         public virtual DbSet<Images> Images { get; set; }
         //----------------------------------------------------------------------------------
+        public virtual DbSet<RequestEmployee> RequestEmployees { get; set; }
+        public virtual DbSet<Post> Posts { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -45,6 +49,23 @@ namespace Kawkaba.Core
             modelBuilder.Entity<IdentityUserLogin<string>>().ToTable("UserLogin", "dbo");
             modelBuilder.Entity<IdentityUserToken<string>>().ToTable("UserTokens", "dbo");
             modelBuilder.Entity<IdentityRoleClaim<string>>().ToTable("RoleClaims", "dbo");
+
+            modelBuilder.Entity<RequestEmployee>()
+                .HasOne(r => r.Employee)
+                .WithMany()
+                .HasForeignKey(r => r.EmployeeId)
+                .OnDelete(DeleteBehavior.NoAction); // Prevent cascading delete for Employee
+
+            modelBuilder.Entity<RequestEmployee>()
+                .HasOne(r => r.Company)
+                .WithMany()
+                .HasForeignKey(r => r.CompanyId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ApplicationUser>()
+            .HasIndex(u => u.CompanyCode)
+            .IsUnique()
+            .HasFilter("[CompanyCode] IS NOT NULL");
         }
     }
 }

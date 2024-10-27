@@ -22,6 +22,7 @@ public interface IAccountService
     Task<ApplicationUser> GetUserFromToken(string token);
     Task<string> AddRoleAsync(RoleUserModel model);
     Task<List<string>> GetRoles();
+    Task<string> GetUserRole(ApplicationUser user);
     Task<string> GetUserProfileImage(string profileId);
     Task<Paths> GetPathByName(string name);
     string ValidateJwtToken(string token);

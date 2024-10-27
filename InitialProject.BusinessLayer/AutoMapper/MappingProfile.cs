@@ -10,6 +10,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
+using Kawkaba.Core.Entity.RequestEmployee;
+using Kawkaba.Core.DTO.AuthViewModel.RequestEmployeeModel;
+using Kawkaba.Core.DTO.AuthViewModel.PostsModel;
+using Kawkaba.Core.Entity.Posts;
 
 namespace Kawkaba.BusinessLayer.AutoMapper
 {
@@ -69,6 +73,23 @@ namespace Kawkaba.BusinessLayer.AutoMapper
                 .ForMember(dest => dest.ProfileImage, opt => opt.Ignore()) // Manually handle file uploads
                 .ForMember(dest => dest.ProfileImageId, opt => opt.MapFrom(src => src.ProfileId))
                 .ReverseMap();
+            //--------------------------------------------------------------------------------------------------------
+            // Mapping for RequestEmployee <-> RequestEmployeeDTO
+            CreateMap<RequestEmployee, RequestEmployeeDTO>()
+                .ForMember(dest => dest.Company, opt => opt.MapFrom(src => src.Company))
+                .ForMember(dest => dest.Employee, opt => opt.MapFrom(src => src.Employee))
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ReverseMap();
+            //------------------------------------------------------------------------------------------------------------
+            CreateMap<Post, PostDTO>()
+                .ForMember(dest => dest.FileUrls, opt => opt.Ignore())
+                .ForMember(dest => dest.Files, opt => opt.Ignore());
+
+            // Map PostDTO to Post entity (for creating new posts)
+            CreateMap<PostDTO, Post>()
+                .ForMember(dest => dest.Files, opt => opt.Ignore())
+                .ForMember(dest => dest.Id, opt => opt.Ignore());
+
 
         }
     }

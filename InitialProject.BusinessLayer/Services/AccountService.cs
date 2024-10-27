@@ -53,6 +53,7 @@ public class AccountService : IAccountService
     {
         var user = await _userManager.Users
             .Include(u => u.Profile)
+            .Include(u => u.Employee)
             .FirstOrDefaultAsync(x => x.Id == id && x.Status);
         return user;
     }
@@ -163,6 +164,7 @@ public class AccountService : IAccountService
             var path = await GetPathByName("ProfileImages");
             user.ProfileId = await _fileHandling.DefaultProfile(path);
         }
+        user.OTP = RandomOTP(6);
         // Create the user
         var result = await _userManager.CreateAsync(user, model.Password);
 
@@ -197,6 +199,18 @@ public class AccountService : IAccountService
             var path = await GetPathByName("ProfileImages");
             user.ProfileId = await _fileHandling.DefaultProfile(path);
         }
+        user.OTP = RandomOTP(6);
+        user.CompanyId = user.Id;
+        bool isUnique;
+        do
+        {
+            // Generate a random 5-digit number
+            user.CompanyCode = new Random().Next(10000, 99999);
+
+            // Check if the generated code already exists
+            isUnique = _unitOfWork.UserRepository.IsExist(u => u.CompanyCode == user.CompanyCode);
+        }
+        while (isUnique); 
         var result = await _userManager.CreateAsync(user, model.Password);
 
         if (result.Succeeded)
@@ -324,7 +338,7 @@ public class AccountService : IAccountService
 
             if (!user.EmailConfirmed)
             {
-                return (false, null, "Email not confirmed. Please verify your Email.");
+                return (false, "405", "Email not confirmed. Please verify your Email.");
             }
 
             // Proceed with login
@@ -400,6 +414,11 @@ public class AccountService : IAccountService
         return _roleManager.Roles.Select(x => x.Name).ToListAsync();
     }
 
+    public async Task<string> GetUserRole(ApplicationUser user)
+    {
+        var roles = await _userManager.GetRolesAsync(user);
+        return roles.FirstOrDefault();
+    }
     //------------------------------------------------------------------------------------------------------------
     public async Task<IdentityResult> Activate(string userId)
     {
@@ -436,14 +455,15 @@ public class AccountService : IAccountService
 
     private async Task<JwtSecurityToken> GenerateJwtToken(ApplicationUser user)
     {
+        var roles = await _userManager.GetRolesAsync(user);
         var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim("uid", user.Id),
                 new Claim("name", user.FullName),
-                new Claim(ClaimTypes.Role, "Customer"),
+                new Claim(ClaimTypes.Role,roles.FirstOrDefault()),
                 new Claim("profileImage", await _fileHandling.GetFile(user.ProfileId)),
-                new Claim(ClaimTypes.MobilePhone, user.PhoneNumber)
+                new Claim(ClaimTypes.Email, user.Email)
             };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));

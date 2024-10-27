@@ -26,7 +26,7 @@ namespace Kawkaba.Core.DTO.AuthViewModel.RegisterModel
         [Compare("Password", ErrorMessage = "Password and confirmation do not match")]
         public string ConfirmPassword { get; set; }
 
-        [DisplayName("Profile Image")]
+        [DisplayName("Files Image")]
         public IFormFile? ImageProfile { get; set; }
     }
 }

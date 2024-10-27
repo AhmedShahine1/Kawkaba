@@ -291,13 +291,13 @@ namespace Kawkaba.Core.Migrations
 
             modelBuilder.Entity("Kawkaba.Core.Entity.ApplicationData.ApplicationUser", b =>
                 {
-                    b.HasOne("Kawkaba.Core.Entity.Files.Images", "Profile")
+                    b.HasOne("Kawkaba.Core.Entity.Files.Images", "Files")
                         .WithMany()
                         .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Profile");
+                    b.Navigation("Files");
                 });
 
             modelBuilder.Entity("Kawkaba.Core.Entity.Files.Images", b =>

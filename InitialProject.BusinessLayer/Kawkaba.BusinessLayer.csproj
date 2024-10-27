@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Crc32.NET" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\InitialProject.Core\Kawkaba.Core.csproj" />
     <ProjectReference Include="..\InitialProject.RepositoryLayer\Kawkaba.RepositoryLayer.csproj" />
   </ItemGroup>
