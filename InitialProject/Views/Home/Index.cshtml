@@ -1,1 +1,97 @@
-﻿
+﻿@model DashboardViewModel
+@{
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Home</h1>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Company Users</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.CompanyUserCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Employees</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.EmployeeUserCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Users without Company</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.UsersWithoutCompanyCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Posts</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.PostCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">User & Post Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Company Users', 'Employees', 'Users without Company', 'Posts'],
+            datasets: [{
+                label: '# Count',
+                data: [@Model.CompanyUserCount, @Model.EmployeeUserCount, @Model.UsersWithoutCompanyCount, @Model.PostCount],
+                backgroundColor: ['#f6c23e', '#36b9cc', '#e74a3b', '#4e73df'],
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+</script>

@@ -16,5 +16,6 @@ namespace Kawkaba.BusinessLayer.Interfaces
         Task<bool> UpdateStatusRequest(string requestId, StatusRequestEmployee statusRequestEmployee);
         Task<List<ApplicationUser>> GetCompanyEmployees(string companyId);
         Task<List<RequestEmployeeDTO>> GetRequestCompany(string companyId);
+        Task<bool> RemoveEmployee(string employeeId);
     }
 }

@@ -229,7 +229,7 @@ public class AccountService : IAccountService
     {
         if (await IsEmailExistAsync(model.Email))
         {
-            throw new ArgumentException("phone number already exists.");
+            throw new ArgumentException("Email already exists.");
         }
 
         var user = mapper.Map<ApplicationUser>(model);

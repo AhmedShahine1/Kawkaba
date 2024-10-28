@@ -4,6 +4,7 @@ using Kawkaba.Core.Entity.ApplicationData;
 using Kawkaba.Core.Entity.Files;
 using Kawkaba.Core.Entity.RequestEmployee;
 using Kawkaba.Core.Entity.Posts;
+using Microsoft.AspNetCore.Identity;
 
 namespace Kawkaba.RepositoryLayer.Repositories;
 
@@ -11,6 +12,8 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
     public IBaseRepository<ApplicationUser> UserRepository { get; set; }
+    public IBaseRepository<ApplicationRole> RoleRepository { get; set; }
+    public IBaseRepository<IdentityUserRole<string>> UserRoleRepository { get; set; }
 
 
     public IBaseRepository<Paths> PathsRepository { get; set; }
@@ -22,6 +25,8 @@ public class UnitOfWork : IUnitOfWork
     {
         _context = context;
         UserRepository = new BaseRepository<ApplicationUser>(context);
+        RoleRepository = new BaseRepository<ApplicationRole>(context);
+        UserRoleRepository = new BaseRepository<IdentityUserRole<string>>(context);
         PathsRepository = new BaseRepository<Paths>(context);
         ImagesRepository = new BaseRepository<Images>(context);
         RequestEmployeeRepository = new BaseRepository<RequestEmployee>(context);

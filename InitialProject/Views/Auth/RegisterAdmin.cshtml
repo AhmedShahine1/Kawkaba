@@ -1,0 +1,45 @@
+﻿@model RegisterAdmin
+@{
+    Layout = "_RegisterLayout";
+}
+<div class="form-container sign-in-container">
+    <form asp-action="RegisterAdmin" method="post" enctype="multipart/form-data">
+        <h1> انشاء حساب</h1>
+        <span class="text-danger">
+            @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+        </span>
+        <div class="form-group">
+            <input asp-for="FullName" placeholder="FullName" class="form-control" />
+            <span asp-validation-for="FullName" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <input asp-for="Email" placeholder="Email" class="form-control" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <input asp-for="Password" placeholder="Password" class="form-control" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <input asp-for="ConfirmPassword" placeholder="ConfirmPassword" class="form-control" />
+            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <input asp-for="ImageProfile" type="file" class="form-control-file" />
+            <span asp-validation-for="ImageProfile" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Register</button>
+    </form>
+</div>
+<div class="overlay-container">
+    <div class="overlay">
+        <div class="overlay-panel overlay-right">
+            <img src="~/asset/Icon.png" alt="Logo" style="width:100px; height:100px;" />
+        </div>
+    </div>
+</div>

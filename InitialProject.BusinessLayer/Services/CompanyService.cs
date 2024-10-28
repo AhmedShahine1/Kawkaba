@@ -9,12 +9,14 @@ using Kawkaba.Core.Helpers;
 using Kawkaba.RepositoryLayer.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Kawkaba.BusinessLayer.Services
 {
@@ -48,16 +50,19 @@ namespace Kawkaba.BusinessLayer.Services
                 {
                     throw new ArgumentNullException("Not Found Company");
                 }
-
-                var requestEmployee = new RequestEmployee()
+                var validrequest = unitOfWork.RequestEmployeeRepository.IsExist(a => a.CompanyId == company.CompanyId && a.EmployeeId == employeeId);
+                if (validrequest == false)
                 {
-                    CompanyId = company.Id,
-                    EmployeeId = employeeId,
-                    Employee = employee,
-                    Company = company
-                };
-                await unitOfWork.RequestEmployeeRepository.AddAsync(requestEmployee);
-                await unitOfWork.SaveChangesAsync();
+                    var requestEmployee = new RequestEmployee()
+                    {
+                        CompanyId = company.Id,
+                        EmployeeId = employeeId,
+                        Employee = employee,
+                        Company = company
+                    };
+                    await unitOfWork.RequestEmployeeRepository.AddAsync(requestEmployee);
+                    await unitOfWork.SaveChangesAsync();
+                }
                 return true;
             }
             catch (Exception ex)
@@ -86,15 +91,18 @@ namespace Kawkaba.BusinessLayer.Services
                 {
                     throw new ArgumentNullException("Not Found Company");
                 }
-
-                employee.CompanyId = company.Id;
-                company.Employee.Add(employee);
-                await _userManager.UpdateAsync(company);
-                var result = await _userManager.UpdateAsync(employee);
-                requestEmployee.StatusRequestEmployee = statusRequestEmployee;
-                unitOfWork.RequestEmployeeRepository.Update(requestEmployee);
+                if (StatusRequestEmployee.Accapted == statusRequestEmployee)
+                {
+                    employee.CompanyId = company.Id;
+                    company.Employee.Add(employee);
+                    await _userManager.UpdateAsync(company);
+                    var result = await _userManager.UpdateAsync(employee);
+                    requestEmployee.StatusRequestEmployee = statusRequestEmployee;
+                }
+                unitOfWork.RequestEmployeeRepository.Delete(requestEmployee);
                 await unitOfWork.SaveChangesAsync();
-                return result.Succeeded;
+                await _userManager.UpdateAsync(company);
+                return true;
             }
             catch (Exception ex)
             {
@@ -112,7 +120,7 @@ namespace Kawkaba.BusinessLayer.Services
         {
             // Fetch the request employees for the given companyId
             var requests = await unitOfWork.RequestEmployeeRepository.FindAllAsync(
-                u => u.CompanyId == companyId,
+                u => u.CompanyId == companyId && u.StatusRequestEmployee != StatusRequestEmployee.Canceled,
                 include: q => q
                     .Include(a => a.Employee)   // Includes Employee entity
                     .Include(a => a.Company)    // Includes Company entity
@@ -137,6 +145,25 @@ namespace Kawkaba.BusinessLayer.Services
 
             // Return the manually mapped list of RequestEmployeeDTO
             return requestsDTO;
+        }
+
+        public async Task<bool> RemoveEmployee(string employeeId)
+        {
+            try
+            {
+                var employee = await _userManager.FindByIdAsync(employeeId);
+                employee.CompanyId = null;
+                var request = await unitOfWork.RequestEmployeeRepository.FindAsync(a => a.EmployeeId == employeeId && a.CompanyId == employee.CompanyId);
+                await _userManager.UpdateAsync(employee);
+                var result = await _userManager.UpdateAsync(employee);
+                unitOfWork.RequestEmployeeRepository.Delete(request);
+                unitOfWork.SaveChanges();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
     }
 }

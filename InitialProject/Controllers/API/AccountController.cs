@@ -9,6 +9,7 @@ using Kawkaba.Core.DTO.AuthViewModel.RegisterModel;
 using Kawkaba.BusinessLayer.Services;
 using Kawkaba.Core.Helpers;
 using Microsoft.AspNetCore.Components.Forms.Mapping;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Kawkaba.Controllers.API
 {
@@ -48,8 +49,16 @@ namespace Kawkaba.Controllers.API
                 var authDto = _mapper.Map<AuthDTO>(customer);
                 authDto.ProfileImage = await _accountService.GetUserProfileImage(customer.ProfileId);
                 authDto.Role = await _accountService.GetUserRole(customer);
-                authDto.Employees = (authDto.Role == "Company") ? _mapper.Map<List<AuthDTO>>(await _companyService.GetCompanyEmployees(customer.Id)) : null;
-
+                if (authDto.Role == "Company")
+                {
+                    authDto.Employees =_mapper.Map<List<AuthDTO>>(await _companyService.GetCompanyEmployees(customer.Id));
+                }
+                else
+                {
+                    var company =await _accountService.GetUserById(authDto.CompanyId);
+                    authDto.CompanyName = company.FullName;
+                    authDto.CompanyProfile = await _accountService.GetUserProfileImage(company.ProfileId);
+                }
                 return Ok(new BaseResponse
                 {
                     status = true,
@@ -182,10 +191,14 @@ namespace Kawkaba.Controllers.API
                 authDto.Token = result.Token;
                 authDto.ProfileImage = await _accountService.GetUserProfileImage(user.ProfileId);
                 authDto.Role = await _accountService.GetUserRole(user);
-                authDto.Employees = (authDto.Role == "Company") ? _mapper.Map<List<AuthDTO>>(await _companyService.GetCompanyEmployees(user.Id)) : null;
-                foreach (var employee in authDto.Employees)
+                if (authDto.Role == "Company")
                 {
-                    employee.ProfileImage = await _accountService.GetUserProfileImage(employee.ProfileImageId);
+                    authDto.Employees = _mapper.Map<List<AuthDTO>>(await _companyService.GetCompanyEmployees(user.Id));
+                    foreach (var employee in authDto.Employees)
+                    {
+                        employee.ProfileImage = await _accountService.GetUserProfileImage(employee.ProfileImageId);
+                    }
+
                 }
                 return Ok(new BaseResponse
                 {
@@ -387,15 +400,12 @@ namespace Kawkaba.Controllers.API
         }
 
         [HttpGet("Employees")]
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Policy = "Company")]
-        public async Task<IActionResult> Employees()
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> Employees(string CompanyId)
         {
             try
             {
-                var token = HttpContext.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-                var Company = await _accountService.GetUserFromToken(token);
-
-                if (Company == null)
+                if (CompanyId == null)
                 {
                     return NotFound(new BaseResponse
                     {
@@ -404,7 +414,7 @@ namespace Kawkaba.Controllers.API
                         ErrorMessage = "Customer not found"
                     });
                 }
-                var Employees = _mapper.Map<List<AuthDTO>>(await _companyService.GetCompanyEmployees(Company.Id));
+                var Employees = _mapper.Map<List<AuthDTO>>(await _companyService.GetCompanyEmployees(CompanyId));
                 foreach (var employee in Employees)
                 {
                     employee.ProfileImage = await _accountService.GetUserProfileImage(employee.ProfileImageId);

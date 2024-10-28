@@ -126,9 +126,9 @@ namespace Kawkaba.Controllers.API
         }
 
         [HttpPost("company/remove")]
-        public async Task<IActionResult> RemoveEmployee(string requestId)
+        public async Task<IActionResult> RemoveEmployee(string employeeId)
         {
-            var result = await companyService.UpdateStatusRequest(requestId, StatusRequestEmployee.Canceled);
+            var result = await companyService.RemoveEmployee(employeeId);
 
             if (result)
             {

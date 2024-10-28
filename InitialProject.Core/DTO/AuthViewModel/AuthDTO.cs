@@ -15,6 +15,7 @@ namespace Kawkaba.Core.DTO.AuthViewModel
 
         public string? CompanyId { get; set; }
         public string? CompanyName { get; set; }
+        public string? CompanyProfile { get; set; }
         public List<AuthDTO> Employees { get; set; }
     }
 }

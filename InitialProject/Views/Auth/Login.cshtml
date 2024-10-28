@@ -1,49 +1,33 @@
 ﻿@model LoginModel
 @{
-
     Layout = "_RegisterLayout";
 }
-<form asp-action="Login" method="post">
-    <input type="hidden" name="ReturnUrl" value="@ViewData["ReturnUrl"]" />
-    <span class ="text-danger">
-        @Html.ValidationSummary(false, "", new { @class = "text-danger" })
-    </span>
-    <div class="input-group mb-3">
-        <input asp-for="Email" class="form-control" placeholder="Email" />
-        <div class="input-group-append">
-            <div class="input-group-text">
-                <span class="fas fa-envelope"></span>
-            </div>
+<div class="form-container sign-in-container">
+    <form asp-action="Login" asp-controller="Auth" method="post">
+        <input type="hidden" name="ReturnUrl" value="@ViewData["ReturnUrl"]" />
+        <h1>تسجيل الدخول</h1>
+        <span class="text-danger">
+            @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+        </span>
+        <div class="form-group">
+            <input asp-for="Email" placeholder="Email" class="form-control" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <input asp-for="Password" placeholder="Password" class="form-control" type="password" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+        <div class="form-group form-check">
+            <label class="form-check-label" for="rememberMeCheck">Remember Me</label>
+            <input asp-for="RememberMe" class="form-check-input" type="checkbox" id="rememberMeCheck" />
+        </div>
+        <button type="submit">تسجيل الدخول</button>
+    </form>
+</div>
+<div class="overlay-container">
+    <div class="overlay">
+        <div class="overlay-panel overlay-right">
+            <img src="~/asset/Icon.png" alt="Logo" style="width:100px; height:100px;" />
         </div>
     </div>
-
-    <div class="input-group mb-3">
-        <input asp-for="Password" class="form-control" placeholder="Password" />
-        <div class="input-group-append">
-            <div class="input-group-text">
-                <span class="fas fa-lock"></span>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-7">
-            <div class="icheck-primary">
-                <input asp-for="RememberMe" id="remember" />
-                <label for="remember">
-                    تذكرني
-                </label>
-            </div>
-        </div>
-        <!-- /.col -->
-        <div class="col-5">
-            <button type="submit" style="background-color: #4055a8; color: white;" class="btn btn-block">تسجيل دخول</button>
-        </div>
-        <!-- /.col -->
-    </div>
-</form>
-<p class="mb-1">
-    <a asp-area="Lawyer" asp-controller="Lawyer" asp-action="Register" class="link-primary">
-        <p>انشاء حساب</p>
-    </a>
-</p>
+</div>

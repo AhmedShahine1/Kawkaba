@@ -29,6 +29,7 @@ public static class ApplicationServicesExtensions
         services.AddTransient<IPostService, PostService>();
         services.AddTransient<IFileHandling, FileHandling>();
         services.AddTransient<IAgoraService, AgoraService>();
+        services.AddTransient<IDashboardService, DashboardService>();
         services.Configure<AgoraSettings>(config.GetSection("AgoraSettings"));
 
         services.AddHttpClient();
