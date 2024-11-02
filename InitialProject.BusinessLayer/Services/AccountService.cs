@@ -243,6 +243,7 @@ public class AccountService : IAccountService
             var path = await GetPathByName("ProfileImages");
             user.ProfileId = await _fileHandling.DefaultProfile(path);
         }
+        user.EmailConfirmed = true;
         var result = await _userManager.CreateAsync(user, model.Password);
 
         if (result.Succeeded)
@@ -366,13 +367,15 @@ public class AccountService : IAccountService
     public async Task<bool> ValidateOTP(string Email, string OTP)
     {
         var user =await _userManager.FindByNameAsync(Email);
-        if(OTP == user.OTP)
-        {
-            user.EmailConfirmed = true;
-            await _unitOfWork.SaveChangesAsync();
-            return true;
-        }
-        return false;
+        //if(OTP == user.OTP)
+        //{
+        //    user.EmailConfirmed = true;
+        //    await _unitOfWork.SaveChangesAsync();
+        //    return true;
+        //}
+        user.EmailConfirmed = true;
+        await _unitOfWork.SaveChangesAsync();
+        return true;
     }
 
     //------------------------------------------------------------------------------------------------------------

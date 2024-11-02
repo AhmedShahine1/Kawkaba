@@ -1,0 +1,57 @@
+﻿@model IEnumerable<PostDTO>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Posts</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Text</th>
+                        <th>Created Date</th>
+                        <th>Author (Company)</th>
+                        <th>Files</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var post in Model)
+                    {
+                        <tr>
+                            <td>@post.Title</td>
+                            <td>@post.Text</td>
+                            <td>@post.Created.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                @if (post.Auth != null)
+                                {
+                                    @post.Auth.CompanyName
+                                }
+                                else
+                                {
+                                    <span>Unknown</span>
+                                }
+                            </td>
+                            <td>
+                                @if (post.FileUrls != null && post.FileUrls.Any())
+                                {
+                                    <ul>
+                                        @foreach (var fileUrl in post.FileUrls)
+                                        {
+                                            <li><a href="@fileUrl" target="_blank">View File</a></li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <span>No Files</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

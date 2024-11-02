@@ -55,9 +55,12 @@ namespace Kawkaba.Controllers.API
                 }
                 else
                 {
-                    var company =await _accountService.GetUserById(authDto.CompanyId);
-                    authDto.CompanyName = company.FullName;
-                    authDto.CompanyProfile = await _accountService.GetUserProfileImage(company.ProfileId);
+                    if (authDto.CompanyId != null)
+                    {
+                        var company = await _accountService.GetUserById(authDto.CompanyId);
+                        authDto.CompanyName = company.FullName;
+                        authDto.CompanyProfile = await _accountService.GetUserProfileImage(company.ProfileId);
+                    }
                 }
                 return Ok(new BaseResponse
                 {
@@ -198,7 +201,15 @@ namespace Kawkaba.Controllers.API
                     {
                         employee.ProfileImage = await _accountService.GetUserProfileImage(employee.ProfileImageId);
                     }
-
+                }
+                else
+                {
+                    if (authDto.CompanyId != null)
+                    {
+                        var company = await _accountService.GetUserById(authDto.CompanyId);
+                        authDto.CompanyName = company.FullName;
+                        authDto.CompanyProfile = await _accountService.GetUserProfileImage(company.ProfileId);
+                    }
                 }
                 return Ok(new BaseResponse
                 {

@@ -1,4 +1,6 @@
-﻿using Kawkaba.BusinessLayer.Interfaces;
+﻿using AgoraIO.Media;
+using Kawkaba.BusinessLayer.Interfaces;
+using Kawkaba.BusinessLayer.Services;
 using Kawkaba.Core.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -43,6 +45,26 @@ namespace Kawkaba.Controllers.API
             {
                 return StatusCode(500, $"Error generating token: {ex.Message}");
             }
+        }
+
+        [HttpGet("rtcToken")]
+        public IActionResult GetRtcToken(string channelName, string uid, string role = "publisher")
+        {
+            if (string.IsNullOrEmpty(channelName) || string.IsNullOrEmpty(uid))
+            {
+                return BadRequest("Channel name and UID are required.");
+            }
+
+            // Set user role
+            var userRole = role.ToLower() == "publisher" ? RtcTokenBuilder.Role.RolePublisher : RtcTokenBuilder.Role.RoleSubscriber;
+
+            // Set expiration time (in seconds)
+            uint expireTimeInSeconds = 3600;
+
+            // Generate token
+            string token = RtcTokenBuilder.buildTokenWithUID(_appId, _appCertificate, channelName, Convert.ToUInt16(uid), userRole, expireTimeInSeconds);
+
+            return Ok(new { token });
         }
     }
 }

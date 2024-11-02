@@ -153,10 +153,8 @@ namespace Kawkaba.BusinessLayer.Services
             {
                 var employee = await _userManager.FindByIdAsync(employeeId);
                 employee.CompanyId = null;
-                var request = await unitOfWork.RequestEmployeeRepository.FindAsync(a => a.EmployeeId == employeeId && a.CompanyId == employee.CompanyId);
                 await _userManager.UpdateAsync(employee);
                 var result = await _userManager.UpdateAsync(employee);
-                unitOfWork.RequestEmployeeRepository.Delete(request);
                 unitOfWork.SaveChanges();
                 return true;
             }

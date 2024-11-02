@@ -64,7 +64,7 @@
         <div class="col-xl-8 col-lg-7">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">User & Post Distribution</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">User Distribution</h6>
                 </div>
                 <div class="card-body">
                     <canvas id="myChart"></canvas>
@@ -80,10 +80,10 @@
     var myChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Company Users', 'Employees', 'Users without Company', 'Posts'],
+            labels: ['Company Users', 'Employees', 'Users without Company'],
             datasets: [{
-                label: '# Count',
-                data: [@Model.CompanyUserCount, @Model.EmployeeUserCount, @Model.UsersWithoutCompanyCount, @Model.PostCount],
+                label: 'Users',
+                data: [@Model.CompanyUserCount, @Model.EmployeeUserCount, @Model.UsersWithoutCompanyCount],
                 backgroundColor: ['#f6c23e', '#36b9cc', '#e74a3b', '#4e73df'],
             }]
         },

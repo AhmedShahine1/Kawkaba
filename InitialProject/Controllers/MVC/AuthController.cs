@@ -50,8 +50,14 @@ namespace Kawkaba.Controllers.MVC
                 var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
-                    Expires = model.RememberMe ? DateTimeOffset.UtcNow.AddDays(30) : DateTimeOffset.UtcNow.AddHours(1)
+                    Expires = model.RememberMe ? DateTimeOffset.UtcNow.AddDays(30) : DateTimeOffset.UtcNow.AddHours(1),
+                    Secure = true, // Use Secure cookie in production
+                    SameSite = SameSiteMode.Strict
                 };
+                var user = await _accountService.GetUserFromToken(token);
+                // Set the user ID in a cookie
+                Response.Cookies.Append("UserProfile", await _accountService.GetUserProfileImage(user.ProfileId), cookieOptions);
+                Response.Cookies.Append("UserName", user.FullName, cookieOptions);
                 if (Url.IsLocalUrl(ReturnUrl))
                 {
                     return Redirect(ReturnUrl);
@@ -72,6 +78,7 @@ namespace Kawkaba.Controllers.MVC
         {
             return View();
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RegisterAdmin(RegisterAdmin model)
@@ -108,33 +115,6 @@ namespace Kawkaba.Controllers.MVC
             }
         }
 
-        //[HttpGet]
-        //public async Task<IActionResult> Files()
-        //{
-        //    var token = HttpContext.Request.Cookies["AuthToken"];
-        //    if (string.IsNullOrEmpty(token))
-        //    {
-        //        return RedirectToAction("Login");
-        //    }
-
-        //    var userId = _accountService.ValidateJwtToken(token);
-        //    var user = await _accountService.GetUserById(userId);
-        //    if (user == null)
-        //    {
-        //        return RedirectToAction("Login");
-        //    }
-
-        //    var model = new UserProfileModel
-        //    {
-        //        FullName = user.FullName,
-        //        Email = user.Email,
-        //        ProfileImage = await _accountService.GetUserProfileImage(user.ProfileId),
-        //        RegistrationDate = user.RegistrationDate,
-        //    };
-
-        //    return View(model);
-        //}
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
@@ -145,11 +125,11 @@ namespace Kawkaba.Controllers.MVC
                 var isLoggedOut = await _accountService.Logout(user);
                 if (isLoggedOut)
                 {
-                    return RedirectToAction("Login");
+                    return RedirectToAction(nameof(Login));
                 }
             }
 
-            return View();
+            return RedirectToAction("Index", "Home");
         }
     }
 }
